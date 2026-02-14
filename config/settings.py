@@ -11,11 +11,14 @@ load_dotenv()
 # Paths
 # ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
-STORAGE_DIR = BASE_DIR / "storage"
+# PERSIST_DIR holds all mutable data (DB + uploads). On Railway this is a
+# mounted volume (/app/data); locally it defaults to <project>/data.
+PERSIST_DIR = Path(os.getenv("PERSIST_DIR", str(BASE_DIR / "data")))
+DB_PATH = PERSIST_DIR / "insight_pilot.db"
+STORAGE_DIR = PERSIST_DIR / "storage"
 UPLOADS_DIR = STORAGE_DIR / "uploads"
 LOGOS_DIR = STORAGE_DIR / "logos"
 EXPORTS_DIR = STORAGE_DIR / "exports"
-DB_PATH = BASE_DIR / "data" / "insight_pilot.db"
 
 # ---------------------------------------------------------------------------
 # Anthropic

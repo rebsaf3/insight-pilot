@@ -4,9 +4,15 @@ Run with: streamlit run app.py
 
 import streamlit as st
 
-from config.settings import APP_TITLE
+from config.settings import APP_TITLE, STORAGE_DIR, UPLOADS_DIR, LOGOS_DIR, EXPORTS_DIR
 from db.database import init_db
 from auth.session import get_current_user, logout
+
+
+def _ensure_directories() -> None:
+    """Create required storage directories if they don't exist."""
+    for d in (STORAGE_DIR, UPLOADS_DIR, LOGOS_DIR, EXPORTS_DIR):
+        d.mkdir(parents=True, exist_ok=True)
 
 
 def main():
@@ -16,6 +22,9 @@ def main():
         layout="wide",
         initial_sidebar_state="expanded",
     )
+
+    # Ensure storage directories exist
+    _ensure_directories()
 
     # Initialize database on first run
     init_db()
