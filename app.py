@@ -16,22 +16,34 @@ def _ensure_directories() -> None:
 
 
 def _get_user_theme(user) -> str:
-    """Return the user's preferred theme ('light' or 'dark')."""
+    """Return the user's preferred theme ('light' or 'dark').
+
+    Wrapped in try/except so a DB or model error never blocks navigation.
+    """
     if user is None:
         return "light"
-    from db.queries import get_user_preferences
-    prefs = get_user_preferences(user.id)
-    return prefs.theme if prefs else "light"
+    try:
+        from db.queries import get_user_preferences
+        prefs = get_user_preferences(user.id)
+        return prefs.theme if prefs else "light"
+    except Exception:
+        return "light"
 
 
 def _check_trial_expiry() -> None:
-    """Auto-downgrade workspaces whose trial has expired."""
-    ws = get_current_workspace()
-    if ws is None:
-        return
-    from services.workspace_service import check_trial_status, expire_trial
-    if check_trial_status(ws.id) == "expired" and ws.tier != "free":
-        expire_trial(ws.id)
+    """Auto-downgrade workspaces whose trial has expired.
+
+    Wrapped in try/except so a failure never blocks navigation.
+    """
+    try:
+        ws = get_current_workspace()
+        if ws is None:
+            return
+        from services.workspace_service import check_trial_status, expire_trial
+        if check_trial_status(ws.id) == "expired" and ws.tier != "free":
+            expire_trial(ws.id)
+    except Exception:
+        pass
 
 
 def main():
@@ -41,6 +53,9 @@ def main():
         layout="wide",
         initial_sidebar_state="expanded",
     )
+
+    # Inject custom CSS theme early (import only — called after user is resolved)
+    from components.theme import inject_custom_css
 
     # Ensure storage directories exist
     _ensure_directories()
@@ -54,12 +69,11 @@ def main():
 
     user = get_current_user()
 
-    # Inject custom CSS theme (respects user dark-mode preference)
-    from components.theme import inject_custom_css
+    # Inject CSS — pass user theme preference (guarded against errors)
     theme = _get_user_theme(user)
     inject_custom_css(theme=theme)
 
-    # Auto-downgrade expired trials on every page load
+    # Auto-downgrade expired trials (guarded — never blocks navigation)
     if user:
         _check_trial_expiry()
 
@@ -68,9 +82,12 @@ def main():
         login_page = st.Page("pages/login.py", title="Sign In", icon=":material/login:")
         nav = st.navigation([login_page], position="hidden")
     else:
-        # Authenticated — render sidebar
-        from components.sidebar import render_sidebar
-        render_sidebar(user)
+        # Authenticated — render sidebar (guarded so nav always runs)
+        try:
+            from components.sidebar import render_sidebar
+            render_sidebar(user)
+        except Exception:
+            pass  # sidebar rendering failure must not block navigation
 
         def handle_logout():
             logout()
