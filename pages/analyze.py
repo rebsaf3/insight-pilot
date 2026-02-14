@@ -22,6 +22,14 @@ def show():
         st.warning("Project not found. Select one from the Projects page.")
         st.stop()
 
+    # Store project instructions for use in generation
+    st.session_state["project_instructions"] = project.instructions or ""
+
+    # Show active project instructions banner
+    if project.instructions:
+        with st.expander("Active Project Instructions", expanded=False, icon=":material/description:"):
+            st.info(project.instructions)
+
     # Get files for this project
     files = queries.get_files_for_project(project_id)
     if not files:
@@ -81,6 +89,22 @@ def _step_describe(user, ws, selected_file):
     # Credit check
     has_credits, balance = credit_service.check_sufficient_credits(ws.id, 5)
 
+    # Prompt Templates
+    templates = queries.get_prompt_templates_for_project(selected_file.project_id)
+    if templates:
+        template_options = {"": "-- Write your own --"}
+        template_options.update({t.id: t.name for t in templates})
+        selected_template_id = st.selectbox(
+            "Use a saved template",
+            list(template_options.keys()),
+            format_func=lambda k: template_options[k],
+            key="template_selector",
+        )
+        if selected_template_id:
+            template = queries.get_prompt_template_by_id(selected_template_id)
+            if template:
+                st.session_state["wizard_prompt_input"] = template.prompt_text
+
     # Prompt input
     st.subheader("Describe Your Report")
 
@@ -105,6 +129,19 @@ def _step_describe(user, ws, selected_file):
         placeholder="Describe the chart, report, or dashboard you want...",
     )
 
+    # Save as template
+    with st.expander("Save as Template", expanded=False):
+        tmpl_name = st.text_input("Template name", key="save_tmpl_name")
+        if st.button("Save Template", disabled=not (prompt and tmpl_name)):
+            queries.create_prompt_template(
+                project_id=selected_file.project_id,
+                created_by=user.id,
+                name=tmpl_name,
+                prompt_text=prompt,
+            )
+            st.success(f"Template '{tmpl_name}' saved!")
+            st.rerun()
+
     # Credit estimate
     st.caption(f"Estimated cost: ~3-5 credits | Your balance: **{balance} credits**")
 
@@ -118,11 +155,18 @@ def _step_describe(user, ws, selected_file):
             st.warning("Please describe what you want.")
             return
 
+        # Increment template usage if one was selected
+        tmpl_id = st.session_state.get("template_selector", "")
+        if tmpl_id:
+            queries.increment_template_usage(tmpl_id)
+
         _generate_chart(user, ws, selected_file, prompt)
 
 
 def _generate_chart(user, ws, selected_file, prompt, is_revision=False):
     """Generate a chart from the prompt."""
+    project_instructions = st.session_state.get("project_instructions", "")
+
     with st.spinner("Generating your report..."):
         try:
             # Load dataframe
@@ -134,6 +178,7 @@ def _generate_chart(user, ws, selected_file, prompt, is_revision=False):
                 user_prompt=prompt,
                 data_profile=profile,
                 df=df,
+                project_instructions=project_instructions,
             )
 
             code = result["code"]
@@ -153,6 +198,7 @@ def _generate_chart(user, ws, selected_file, prompt, is_revision=False):
                     error_message=exec_result["error"],
                     data_profile=profile,
                     df=df,
+                    project_instructions=project_instructions,
                 )
                 code = refine_result["code"]
                 total_tokens += refine_result["tokens_used"]

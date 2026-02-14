@@ -10,7 +10,8 @@ from db.models import (
     User, UserSession, Workspace, WorkspaceMember, WorkspaceInvitation,
     Project, UploadedFile, Dashboard, Chart, CreditLedgerEntry,
     Subscription, CreditPurchase, AddOn, WorkspaceBranding, ApiKey,
-    PromptHistoryEntry, row_to_model, rows_to_models,
+    PromptHistoryEntry, PromptTemplate, AuditLogEntry, SystemSetting,
+    row_to_model, rows_to_models,
 )
 
 
@@ -368,12 +369,13 @@ def revoke_invitation(invitation_id: str) -> None:
 # Projects
 # =========================================================================
 
-def create_project(workspace_id: str, created_by: str, name: str, description: str = "") -> str:
+def create_project(workspace_id: str, created_by: str, name: str,
+                   description: str = "", instructions: str = "") -> str:
     pid = _new_id()
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO projects (id, workspace_id, created_by, name, description) VALUES (?, ?, ?, ?, ?)",
-            (pid, workspace_id, created_by, name, description),
+            "INSERT INTO projects (id, workspace_id, created_by, name, description, instructions) VALUES (?, ?, ?, ?, ?, ?)",
+            (pid, workspace_id, created_by, name, description, instructions),
         )
     return pid
 
@@ -872,3 +874,259 @@ def get_prompt_history(workspace_id: str, project_id: str, limit: int = 50) -> l
             (workspace_id, project_id, limit),
         ).fetchall()
     return rows_to_models(rows, PromptHistoryEntry)
+
+
+# =========================================================================
+# Prompt Templates
+# =========================================================================
+
+def create_prompt_template(project_id: str, created_by: str, name: str,
+                           prompt_text: str, category: str = "") -> str:
+    tid = _new_id()
+    with get_db() as conn:
+        conn.execute(
+            """INSERT INTO prompt_templates (id, project_id, created_by, name, prompt_text, category)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (tid, project_id, created_by, name, prompt_text, category),
+        )
+    return tid
+
+
+def get_prompt_templates_for_project(project_id: str) -> list[PromptTemplate]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM prompt_templates WHERE project_id = ? ORDER BY usage_count DESC, name",
+            (project_id,),
+        ).fetchall()
+    return rows_to_models(rows, PromptTemplate)
+
+
+def get_prompt_template_by_id(template_id: str) -> Optional[PromptTemplate]:
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM prompt_templates WHERE id = ?", (template_id,)).fetchone()
+    return row_to_model(row, PromptTemplate)
+
+
+def update_prompt_template(template_id: str, **kwargs) -> bool:
+    if not kwargs:
+        return False
+    kwargs["updated_at"] = "datetime('now')"
+    sets = []
+    vals = []
+    for k, v in kwargs.items():
+        if v == "datetime('now')":
+            sets.append(f"{k} = datetime('now')")
+        else:
+            sets.append(f"{k} = ?")
+            vals.append(v)
+    vals.append(template_id)
+    sql = f"UPDATE prompt_templates SET {', '.join(sets)} WHERE id = ?"
+    with get_db() as conn:
+        conn.execute(sql, tuple(vals))
+    return True
+
+
+def delete_prompt_template(template_id: str) -> bool:
+    with get_db() as conn:
+        conn.execute("DELETE FROM prompt_templates WHERE id = ?", (template_id,))
+    return True
+
+
+def increment_template_usage(template_id: str) -> None:
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE prompt_templates SET usage_count = usage_count + 1 WHERE id = ?",
+            (template_id,),
+        )
+
+
+# =========================================================================
+# Admin Queries (global — no workspace scoping)
+# =========================================================================
+
+def get_all_users(limit: int = 100, offset: int = 0) -> list[User]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+    return rows_to_models(rows, User)
+
+
+def count_all_users() -> int:
+    with get_db() as conn:
+        row = conn.execute("SELECT COUNT(*) as cnt FROM users").fetchone()
+    return row["cnt"]
+
+
+def get_all_workspaces(limit: int = 100, offset: int = 0) -> list[Workspace]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM workspaces ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+    return rows_to_models(rows, Workspace)
+
+
+def count_all_workspaces() -> int:
+    with get_db() as conn:
+        row = conn.execute("SELECT COUNT(*) as cnt FROM workspaces").fetchone()
+    return row["cnt"]
+
+
+def get_all_subscriptions(status: str = None) -> list[Subscription]:
+    with get_db() as conn:
+        if status:
+            rows = conn.execute(
+                "SELECT * FROM subscriptions WHERE status = ? ORDER BY created_at DESC",
+                (status,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM subscriptions ORDER BY created_at DESC"
+            ).fetchall()
+    return rows_to_models(rows, Subscription)
+
+
+def count_subscriptions_by_tier() -> dict:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT tier, COUNT(*) as cnt FROM subscriptions WHERE status = 'active' GROUP BY tier"
+        ).fetchall()
+    return {row["tier"]: row["cnt"] for row in rows}
+
+
+def get_total_credits_consumed() -> int:
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(ABS(change_amount)), 0) as total FROM credit_ledger WHERE change_amount < 0"
+        ).fetchone()
+    return row["total"]
+
+
+def get_total_api_calls() -> int:
+    with get_db() as conn:
+        row = conn.execute("SELECT COUNT(*) as cnt FROM prompt_history").fetchone()
+    return row["cnt"]
+
+
+def get_total_revenue_cents() -> int:
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(amount_paid_cents), 0) as total FROM credit_purchases"
+        ).fetchone()
+    return row["total"]
+
+
+def get_all_credit_purchases(limit: int = 100) -> list[CreditPurchase]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM credit_purchases ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return rows_to_models(rows, CreditPurchase)
+
+
+def get_all_prompt_history(limit: int = 100, offset: int = 0) -> list[PromptHistoryEntry]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM prompt_history ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+    return rows_to_models(rows, PromptHistoryEntry)
+
+
+def get_all_credit_ledger(limit: int = 100, offset: int = 0) -> list[CreditLedgerEntry]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM credit_ledger ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+    return rows_to_models(rows, CreditLedgerEntry)
+
+
+# =========================================================================
+# Audit Log
+# =========================================================================
+
+def create_audit_log(user_id: str, action: str, entity_type: str,
+                     entity_id: str = None, details: str = None,
+                     ip_address: str = None) -> str:
+    aid = _new_id()
+    detail_str = json.dumps(details) if isinstance(details, dict) else details
+    with get_db() as conn:
+        conn.execute(
+            """INSERT INTO audit_log (id, user_id, action, entity_type, entity_id, details, ip_address)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (aid, user_id, action, entity_type, entity_id, detail_str, ip_address),
+        )
+    return aid
+
+
+def get_audit_log(limit: int = 100, offset: int = 0,
+                  entity_type: str = None, user_id: str = None) -> list[AuditLogEntry]:
+    conditions = []
+    params: list = []
+    if entity_type:
+        conditions.append("entity_type = ?")
+        params.append(entity_type)
+    if user_id:
+        conditions.append("user_id = ?")
+        params.append(user_id)
+    where = " AND ".join(conditions) if conditions else "1=1"
+    params.extend([limit, offset])
+    with get_db() as conn:
+        rows = conn.execute(
+            f"SELECT * FROM audit_log WHERE {where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            tuple(params),
+        ).fetchall()
+    return rows_to_models(rows, AuditLogEntry)
+
+
+# =========================================================================
+# System Settings
+# =========================================================================
+
+def get_system_setting(key: str) -> Optional[str]:
+    with get_db() as conn:
+        row = conn.execute("SELECT value FROM system_settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else None
+
+
+def set_system_setting(key: str, value: str, updated_by: str) -> None:
+    with get_db() as conn:
+        conn.execute(
+            """INSERT INTO system_settings (key, value, updated_by, updated_at)
+               VALUES (?, ?, ?, datetime('now'))
+               ON CONFLICT(key) DO UPDATE SET value = ?, updated_by = ?, updated_at = datetime('now')""",
+            (key, value, updated_by, value, updated_by),
+        )
+
+
+def get_all_system_settings() -> dict:
+    with get_db() as conn:
+        rows = conn.execute("SELECT key, value FROM system_settings ORDER BY key").fetchall()
+    return {row["key"]: row["value"] for row in rows}
+
+
+# =========================================================================
+# Admin User Management
+# =========================================================================
+
+def set_user_superadmin(user_id: str, is_superadmin: bool) -> bool:
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE users SET is_superadmin = ?, updated_at = datetime('now') WHERE id = ?",
+            (1 if is_superadmin else 0, user_id),
+        )
+    return True
+
+
+def set_superadmin_by_email(email: str) -> bool:
+    """Set superadmin flag for user by email. Called during init."""
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE users SET is_superadmin = 1, updated_at = datetime('now') WHERE email = ?",
+            (email.strip().lower(),),
+        )
+    return True

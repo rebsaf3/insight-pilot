@@ -25,6 +25,7 @@ def generate_chart_code(
     df: pd.DataFrame,
     conversation_history: list[dict] = None,
     api_key: str = None,
+    project_instructions: str = None,
 ) -> dict:
     """Send a prompt to Claude to generate plotly visualization code.
 
@@ -52,7 +53,7 @@ def generate_chart_code(
     response = client.messages.create(
         model=DEFAULT_MODEL,
         max_tokens=MAX_TOKENS,
-        system=build_system_prompt(),
+        system=build_system_prompt(project_instructions=project_instructions),
         messages=messages,
         temperature=0.0,
     )
@@ -78,6 +79,7 @@ def refine_chart_code(
     data_profile: dict,
     df: pd.DataFrame,
     api_key: str = None,
+    project_instructions: str = None,
 ) -> dict:
     """Send error context back to Claude for self-correction."""
     client = get_client(api_key)
@@ -98,7 +100,7 @@ def refine_chart_code(
     response = client.messages.create(
         model=DEFAULT_MODEL,
         max_tokens=MAX_TOKENS,
-        system=build_system_prompt(),
+        system=build_system_prompt(project_instructions=project_instructions),
         messages=messages,
         temperature=0.0,
     )

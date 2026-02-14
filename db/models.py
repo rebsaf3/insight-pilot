@@ -17,8 +17,17 @@ class User:
     email_2fa_enabled: bool
     sso_provider: Optional[str]
     sso_provider_id: Optional[str]
-    created_at: str
-    updated_at: str
+    is_superadmin: bool = False
+    created_at: str = ""
+    updated_at: str = ""
+
+    def __post_init__(self):
+        if isinstance(self.is_superadmin, int):
+            self.is_superadmin = bool(self.is_superadmin)
+        if isinstance(self.totp_enabled, int):
+            self.totp_enabled = bool(self.totp_enabled)
+        if isinstance(self.email_2fa_enabled, int):
+            self.email_2fa_enabled = bool(self.email_2fa_enabled)
 
     @property
     def has_2fa(self) -> bool:
@@ -86,8 +95,9 @@ class Project:
     created_by: str
     name: str
     description: str
-    created_at: str
-    updated_at: str
+    instructions: str = ""
+    created_at: str = ""
+    updated_at: str = ""
 
 
 @dataclass
@@ -255,6 +265,51 @@ class PromptHistoryEntry:
     tokens_used: int
     model_used: str
     created_at: str
+
+
+@dataclass
+class PromptTemplate:
+    id: str
+    project_id: str
+    created_by: str
+    name: str
+    prompt_text: str
+    category: str = ""
+    is_default: bool = False
+    usage_count: int = 0
+    created_at: str = ""
+    updated_at: str = ""
+
+    def __post_init__(self):
+        if isinstance(self.is_default, int):
+            self.is_default = bool(self.is_default)
+
+
+@dataclass
+class AuditLogEntry:
+    id: str
+    user_id: Optional[str]
+    action: str
+    entity_type: str
+    entity_id: Optional[str] = None
+    details: Optional[str] = None
+    ip_address: Optional[str] = None
+    created_at: str = ""
+
+    def __post_init__(self):
+        if isinstance(self.details, str) and self.details:
+            try:
+                self.details = json.loads(self.details)
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+
+@dataclass
+class SystemSetting:
+    key: str
+    value: str
+    updated_by: Optional[str] = None
+    updated_at: str = ""
 
 
 # ---------------------------------------------------------------------------

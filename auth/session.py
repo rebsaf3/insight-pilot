@@ -129,3 +129,12 @@ def require_permission(permission: str) -> tuple[User, Workspace]:
         st.error("You don't have permission to access this feature.")
         st.stop()
     return user, ws
+
+
+def require_superadmin() -> User:
+    """Require superadmin access. Stops the page if not a superadmin."""
+    user = require_auth()
+    if not getattr(user, "is_superadmin", False):
+        st.error("Access denied. This section is restricted to system administrators.")
+        st.stop()
+    return user

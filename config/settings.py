@@ -176,6 +176,11 @@ AVAILABLE_FONTS = [
     "Source Sans Pro", "Nunito", "Poppins", "Raleway", "PT Sans",
 ]
 
+# ---------------------------------------------------------------------------
+# Admin / Superadmin
+# ---------------------------------------------------------------------------
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
+
 CHART_PALETTES = {
     "default": ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"],
     "pastel": ["#a1c9f4", "#ffb482", "#8de5a1", "#ff9f9b", "#d0bbff", "#debb9b"],

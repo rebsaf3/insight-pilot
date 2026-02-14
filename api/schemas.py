@@ -11,6 +11,7 @@ from typing import Optional
 class ProjectCreate(BaseModel):
     name: str
     description: str = ""
+    instructions: str = ""
 
 
 class ProjectResponse(BaseModel):
@@ -18,12 +19,40 @@ class ProjectResponse(BaseModel):
     workspace_id: str
     name: str
     description: str
+    instructions: str = ""
     created_at: str
 
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    instructions: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Prompt Templates
+# ---------------------------------------------------------------------------
+
+class PromptTemplateCreate(BaseModel):
+    name: str
+    prompt_text: str
+    category: str = ""
+
+
+class PromptTemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    prompt_text: Optional[str] = None
+    category: Optional[str] = None
+
+
+class PromptTemplateResponse(BaseModel):
+    id: str
+    project_id: str
+    name: str
+    prompt_text: str
+    category: str = ""
+    usage_count: int = 0
+    created_at: str
 
 
 # ---------------------------------------------------------------------------

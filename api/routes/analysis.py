@@ -33,11 +33,16 @@ async def analyze(
         df = file_service.load_dataframe(uploaded_file.file_path, uploaded_file.file_format)
         profile = uploaded_file.data_profile or {}
 
+        # Look up project for instructions
+        project = queries.get_project_by_id(uploaded_file.project_id, ws.id)
+        project_instructions = project.instructions if project else None
+
         # Generate code
         result = llm_service.generate_chart_code(
             user_prompt=body.prompt,
             data_profile=profile,
             df=df,
+            project_instructions=project_instructions,
         )
 
         code = result["code"]
@@ -56,6 +61,7 @@ async def analyze(
                 error_message=exec_result["error"],
                 data_profile=profile,
                 df=df,
+                project_instructions=project_instructions,
             )
             code = refine["code"]
             total_tokens += refine["tokens_used"]

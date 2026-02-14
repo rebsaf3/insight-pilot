@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
     email_2fa_enabled INTEGER NOT NULL DEFAULT 0,
     sso_provider    TEXT DEFAULT NULL,
     sso_provider_id TEXT DEFAULT NULL,
+    is_superadmin   INTEGER NOT NULL DEFAULT 0,
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -117,6 +118,7 @@ CREATE TABLE IF NOT EXISTS projects (
     created_by      TEXT NOT NULL REFERENCES users(id),
     name            TEXT NOT NULL,
     description     TEXT NOT NULL DEFAULT '',
+    instructions    TEXT NOT NULL DEFAULT '',
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -280,6 +282,53 @@ CREATE TABLE IF NOT EXISTS prompt_history (
 );
 CREATE INDEX IF NOT EXISTS idx_ph_user ON prompt_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_ph_workspace ON prompt_history(workspace_id);
+
+-- =========================================================================
+-- Prompt Templates
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS prompt_templates (
+    id              TEXT PRIMARY KEY,
+    project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    created_by      TEXT NOT NULL REFERENCES users(id),
+    name            TEXT NOT NULL,
+    prompt_text     TEXT NOT NULL,
+    category        TEXT NOT NULL DEFAULT '',
+    is_default      INTEGER NOT NULL DEFAULT 0,
+    usage_count     INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_pt_project ON prompt_templates(project_id);
+
+-- =========================================================================
+-- Audit Log
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id              TEXT PRIMARY KEY,
+    user_id         TEXT REFERENCES users(id),
+    action          TEXT NOT NULL,
+    entity_type     TEXT NOT NULL,
+    entity_id       TEXT,
+    details         TEXT,
+    ip_address      TEXT,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
+
+-- =========================================================================
+-- System Settings (key-value store for global config)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS system_settings (
+    key             TEXT PRIMARY KEY,
+    value           TEXT NOT NULL,
+    updated_by      TEXT REFERENCES users(id),
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
@@ -315,6 +364,18 @@ def init_db() -> None:
     """Create all tables if they do not exist. Safe to call multiple times."""
     with get_db() as conn:
         conn.executescript(_SCHEMA)
+
+        # Migrations for existing databases — each wrapped in try/except
+        # so they silently skip if the column already exists.
+        migrations = [
+            "ALTER TABLE projects ADD COLUMN instructions TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE users ADD COLUMN is_superadmin INTEGER NOT NULL DEFAULT 0",
+        ]
+        for sql in migrations:
+            try:
+                conn.execute(sql)
+            except Exception:
+                pass  # column already exists
 
 
 def execute_query(sql: str, params: tuple = ()) -> list[sqlite3.Row]:

@@ -20,6 +20,10 @@ def main():
     # Initialize database on first run
     init_db()
 
+    # Ensure superadmin is set from ADMIN_EMAIL env var
+    from services.admin_service import ensure_superadmin
+    ensure_superadmin()
+
     user = get_current_user()
 
     if user is None:
@@ -35,27 +39,39 @@ def main():
             logout()
             st.rerun()
 
-        nav = st.navigation(
-            {
-                "Workspace": [
-                    st.Page("pages/projects.py", title="Projects", icon=":material/folder:", default=True),
-                    st.Page("pages/upload.py", title="Upload Data", icon=":material/upload:"),
-                    st.Page("pages/analyze.py", title="Analyze", icon=":material/analytics:"),
-                ],
-                "Dashboards": [
-                    st.Page("pages/dashboard_view.py", title="View Dashboard", icon=":material/dashboard:"),
-                    st.Page("pages/dashboard_edit.py", title="Edit Dashboard", icon=":material/edit:"),
-                ],
-                "Settings": [
-                    st.Page("pages/billing.py", title="Billing", icon=":material/payments:"),
-                    st.Page("pages/branding.py", title="Branding", icon=":material/palette:"),
-                    st.Page("pages/workspace_settings.py", title="Workspace", icon=":material/group:"),
-                    st.Page("pages/api_settings.py", title="API", icon=":material/api:"),
-                    st.Page("pages/settings.py", title="Account", icon=":material/settings:"),
-                    st.Page(handle_logout, title="Sign Out", icon=":material/logout:"),
-                ],
-            }
-        )
+        nav_groups = {
+            "Workspace": [
+                st.Page("pages/projects.py", title="Projects", icon=":material/folder:", default=True),
+                st.Page("pages/upload.py", title="Upload Data", icon=":material/upload:"),
+                st.Page("pages/analyze.py", title="Analyze", icon=":material/analytics:"),
+            ],
+            "Dashboards": [
+                st.Page("pages/dashboard_view.py", title="View Dashboard", icon=":material/dashboard:"),
+                st.Page("pages/dashboard_edit.py", title="Edit Dashboard", icon=":material/edit:"),
+            ],
+            "Settings": [
+                st.Page("pages/billing.py", title="Billing", icon=":material/payments:"),
+                st.Page("pages/branding.py", title="Branding", icon=":material/palette:"),
+                st.Page("pages/workspace_settings.py", title="Workspace", icon=":material/group:"),
+                st.Page("pages/api_settings.py", title="API", icon=":material/api:"),
+                st.Page("pages/settings.py", title="Account", icon=":material/settings:"),
+                st.Page(handle_logout, title="Sign Out", icon=":material/logout:"),
+            ],
+        }
+
+        # Admin pages — only visible to superadmins
+        if getattr(user, "is_superadmin", False):
+            nav_groups["Admin"] = [
+                st.Page("pages/admin/dashboard.py", title="Overview", icon=":material/admin_panel_settings:"),
+                st.Page("pages/admin/users.py", title="Users", icon=":material/people:"),
+                st.Page("pages/admin/workspaces.py", title="Workspaces", icon=":material/workspaces:"),
+                st.Page("pages/admin/billing.py", title="Billing", icon=":material/receipt_long:"),
+                st.Page("pages/admin/settings.py", title="System Config", icon=":material/tune:"),
+                st.Page("pages/admin/audit.py", title="Audit Log", icon=":material/history:"),
+                st.Page("pages/admin/moderation.py", title="Moderation", icon=":material/shield:"),
+            ]
+
+        nav = st.navigation(nav_groups)
 
     nav.run()
 

@@ -4,9 +4,16 @@ from prompts.system_prompt import SYSTEM_PROMPT
 from prompts.few_shot_examples import EXAMPLES
 
 
-def build_system_prompt() -> str:
-    """Return the system prompt."""
-    return SYSTEM_PROMPT
+def build_system_prompt(project_instructions: str = None) -> str:
+    """Return the system prompt, optionally with per-project instructions appended."""
+    prompt = SYSTEM_PROMPT
+    if project_instructions and project_instructions.strip():
+        prompt += f"""
+
+PROJECT-SPECIFIC INSTRUCTIONS (always follow these for every chart you generate):
+{project_instructions.strip()}
+"""
+    return prompt
 
 
 def build_messages(
