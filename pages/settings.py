@@ -318,7 +318,7 @@ def _show_team_tab(user):
 
         # Admin actions (not for self, not for owner)
         if is_admin and m.user_id != user.id and m.role != "owner":
-            ac1, ac2 = st.columns(2)
+            ac1, ac2, ac3 = st.columns(3)
             with ac1:
                 new_role = st.selectbox(
                     "Role",
@@ -333,6 +333,28 @@ def _show_team_tab(user):
                         st.success(f"Role updated to {new_role}.")
                         st.rerun()
             with ac2:
+                if st.button("Reset Password", key=f"reset_pw_{m.user_id}"):
+                    st.session_state[f"confirm_reset_pw_{m.user_id}"] = True
+                if st.session_state.get(f"confirm_reset_pw_{m.user_id}"):
+                    temp_pw = st.text_input(
+                        "Set temporary password",
+                        type="password",
+                        key=f"temp_pw_{m.user_id}",
+                        placeholder="Min 8 characters",
+                    )
+                    rc1, rc2 = st.columns(2)
+                    if rc1.button("Confirm", key=f"confirm_pw_{m.user_id}"):
+                        if temp_pw and len(temp_pw) >= 8:
+                            queries.update_user(m.user_id, password_hash=hash_password(temp_pw))
+                            st.session_state.pop(f"confirm_reset_pw_{m.user_id}", None)
+                            st.success(f"Password reset for {member_user.display_name}.")
+                            st.rerun()
+                        else:
+                            st.error("Password must be at least 8 characters.")
+                    if rc2.button("Cancel", key=f"cancel_pw_{m.user_id}"):
+                        st.session_state.pop(f"confirm_reset_pw_{m.user_id}", None)
+                        st.rerun()
+            with ac3:
                 if st.button("Remove", key=f"remove_{m.user_id}"):
                     queries.remove_workspace_member(ws.id, m.user_id)
                     st.success("Member removed.")

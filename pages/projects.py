@@ -132,7 +132,7 @@ def show():
         )
 
         # Stat row under card
-        s1, s2, s3, s4, s5, s6, s7 = st.columns([1, 1, 1, 1, 1, 1, 2])
+        s1, s2, s3, s4, s5, s6, s7, s8 = st.columns([1, 1, 1, 1, 1, 1, 1, 2])
         with s1:
             st.markdown(
                 f"<div class='ip-stat'><div class='ip-stat-value'>{summary['files_total']}</div>"
@@ -155,21 +155,29 @@ def show():
                 unsafe_allow_html=True,
             )
         with s4:
+            pending_color = "#D97706" if summary["files_pending"] > 0 else "#A8A29E"
+            st.markdown(
+                f"<div class='ip-stat'><div class='ip-stat-value' style='color:{pending_color}'>"
+                f"{summary['files_pending']}</div>"
+                f"<div class='ip-stat-label'>Pending</div></div>",
+                unsafe_allow_html=True,
+            )
+        with s5:
             st.markdown(
                 f"<div class='ip-stat'><div class='ip-stat-value'>{summary['analyses_count']}</div>"
                 f"<div class='ip-stat-label'>Analyses</div></div>",
                 unsafe_allow_html=True,
             )
-        with s5:
+        with s6:
             st.markdown(
                 f"<div class='ip-stat'><div class='ip-stat-value'>{summary['dashboards_count']}</div>"
                 f"<div class='ip-stat-label'>Dashboards</div></div>",
                 unsafe_allow_html=True,
             )
-        with s6:
+        with s7:
             if st.button("Edit", key=f"edit_{project.id}", use_container_width=True):
                 st.session_state[f"editing_project_{project.id}"] = True
-        with s7:
+        with s8:
             if st.button(f"Open Project", key=f"open_{project.id}", type="primary", use_container_width=True):
                 set_current_project(project.id)
                 st.switch_page("pages/upload.py")

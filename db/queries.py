@@ -1390,7 +1390,8 @@ def get_project_activity_summary(project_id: str) -> dict:
         files_row = conn.execute(
             """SELECT COUNT(*) as total,
                       SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) as success,
-                      SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors
+                      SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors,
+                      SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending
                FROM uploaded_files WHERE project_id = ?""",
             (project_id,),
         ).fetchone()
@@ -1416,6 +1417,7 @@ def get_project_activity_summary(project_id: str) -> dict:
         "files_total": files_row["total"] or 0,
         "files_success": files_row["success"] or 0,
         "files_error": files_row["errors"] or 0,
+        "files_pending": files_row["pending"] or 0,
         "dashboards_count": dash_row["cnt"] or 0,
         "analyses_count": analysis_row["cnt"] or 0,
         "last_activity": last_row["last_at"],
