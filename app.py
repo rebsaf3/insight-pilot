@@ -57,6 +57,7 @@ def main():
                 st.Page("pages/projects.py", title="Projects", icon=":material/folder:", default=True),
                 st.Page("pages/upload.py", title="Upload Data", icon=":material/upload:"),
                 st.Page("pages/analyze.py", title="Analyze", icon=":material/analytics:"),
+                st.Page("pages/usage.py", title="Usage", icon=":material/bar_chart:"),
             ],
             "Dashboards": [
                 st.Page("pages/dashboard_view.py", title="View Dashboard", icon=":material/dashboard:"),

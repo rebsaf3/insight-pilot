@@ -941,6 +941,239 @@ def increment_template_usage(template_id: str) -> None:
 
 
 # =========================================================================
+# Usage Analytics (workspace-scoped, date-filtered)
+# =========================================================================
+
+def get_credits_used_in_range(workspace_id: str, start_date: str, end_date: str,
+                              user_id: str = None) -> int:
+    """Total credits consumed (deductions) within a date range."""
+    params: list = [workspace_id, start_date, end_date]
+    user_filter = ""
+    if user_id:
+        user_filter = "AND user_id = ?"
+        params.append(user_id)
+    with get_db() as conn:
+        row = conn.execute(
+            f"""SELECT COALESCE(SUM(ABS(change_amount)), 0) as total
+                FROM credit_ledger
+                WHERE workspace_id = ? AND change_amount < 0
+                  AND date(created_at) >= ? AND date(created_at) <= ?
+                  {user_filter}""",
+            tuple(params),
+        ).fetchone()
+    return row["total"]
+
+
+def get_analyses_count_in_range(workspace_id: str, start_date: str, end_date: str,
+                                project_id: str = None, user_id: str = None) -> int:
+    """Total number of AI analyses within a date range."""
+    params: list = [workspace_id, start_date, end_date]
+    filters = ""
+    if project_id:
+        filters += " AND project_id = ?"
+        params.append(project_id)
+    if user_id:
+        filters += " AND user_id = ?"
+        params.append(user_id)
+    with get_db() as conn:
+        row = conn.execute(
+            f"""SELECT COUNT(*) as cnt FROM prompt_history
+                WHERE workspace_id = ?
+                  AND date(created_at) >= ? AND date(created_at) <= ?
+                  {filters}""",
+            tuple(params),
+        ).fetchone()
+    return row["cnt"]
+
+
+def get_dashboards_created_in_range(workspace_id: str, start_date: str, end_date: str,
+                                    project_id: str = None, user_id: str = None) -> int:
+    """Count dashboards created within a date range."""
+    params: list = [workspace_id, start_date, end_date]
+    filters = ""
+    if project_id:
+        filters += " AND d.project_id = ?"
+        params.append(project_id)
+    if user_id:
+        filters += " AND d.created_by = ?"
+        params.append(user_id)
+    with get_db() as conn:
+        row = conn.execute(
+            f"""SELECT COUNT(*) as cnt FROM dashboards d
+                JOIN projects p ON d.project_id = p.id
+                WHERE p.workspace_id = ?
+                  AND date(d.created_at) >= ? AND date(d.created_at) <= ?
+                  {filters}""",
+            tuple(params),
+        ).fetchone()
+    return row["cnt"]
+
+
+def get_credit_usage_by_day(workspace_id: str, start_date: str, end_date: str,
+                            user_id: str = None) -> list[dict]:
+    """Daily credit consumption (deductions only) within a date range."""
+    params: list = [workspace_id, start_date, end_date]
+    user_filter = ""
+    if user_id:
+        user_filter = "AND user_id = ?"
+        params.append(user_id)
+    with get_db() as conn:
+        rows = conn.execute(
+            f"""SELECT date(created_at) as date,
+                       SUM(ABS(change_amount)) as credits_used
+                FROM credit_ledger
+                WHERE workspace_id = ? AND change_amount < 0
+                  AND date(created_at) >= ? AND date(created_at) <= ?
+                  {user_filter}
+                GROUP BY date(created_at)
+                ORDER BY date(created_at)""",
+            tuple(params),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_analyses_by_day(workspace_id: str, start_date: str, end_date: str,
+                        project_id: str = None, user_id: str = None) -> list[dict]:
+    """Daily AI analysis count within a date range."""
+    params: list = [workspace_id, start_date, end_date]
+    filters = ""
+    if project_id:
+        filters += " AND project_id = ?"
+        params.append(project_id)
+    if user_id:
+        filters += " AND user_id = ?"
+        params.append(user_id)
+    with get_db() as conn:
+        rows = conn.execute(
+            f"""SELECT date(created_at) as date,
+                       COUNT(*) as analysis_count
+                FROM prompt_history
+                WHERE workspace_id = ?
+                  AND date(created_at) >= ? AND date(created_at) <= ?
+                  {filters}
+                GROUP BY date(created_at)
+                ORDER BY date(created_at)""",
+            tuple(params),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_token_usage_by_project(workspace_id: str, start_date: str, end_date: str,
+                               user_id: str = None) -> list[dict]:
+    """Token usage grouped by project within a date range."""
+    params: list = [workspace_id, start_date, end_date]
+    user_filter = ""
+    if user_id:
+        user_filter = "AND ph.user_id = ?"
+        params.append(user_id)
+    with get_db() as conn:
+        rows = conn.execute(
+            f"""SELECT p.name as project_name, p.id as project_id,
+                       SUM(ph.tokens_used) as total_tokens,
+                       COUNT(*) as analysis_count
+                FROM prompt_history ph
+                JOIN projects p ON ph.project_id = p.id
+                WHERE ph.workspace_id = ?
+                  AND date(ph.created_at) >= ? AND date(ph.created_at) <= ?
+                  {user_filter}
+                GROUP BY ph.project_id
+                ORDER BY total_tokens DESC""",
+            tuple(params),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_uploads_in_range(workspace_id: str, start_date: str, end_date: str,
+                         project_id: str = None, user_id: str = None) -> list[dict]:
+    """File uploads within a date range, with format and project info."""
+    params: list = [workspace_id, start_date, end_date]
+    filters = ""
+    if project_id:
+        filters += " AND f.project_id = ?"
+        params.append(project_id)
+    if user_id:
+        filters += " AND f.uploaded_by = ?"
+        params.append(user_id)
+    with get_db() as conn:
+        rows = conn.execute(
+            f"""SELECT f.id, f.original_filename, f.file_format, f.file_size_bytes,
+                       f.row_count, f.uploaded_at, p.name as project_name
+                FROM uploaded_files f
+                JOIN projects p ON f.project_id = p.id
+                WHERE p.workspace_id = ?
+                  AND date(f.uploaded_at) >= ? AND date(f.uploaded_at) <= ?
+                  {filters}
+                ORDER BY f.uploaded_at DESC""",
+            tuple(params),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_file_format_distribution(workspace_id: str, start_date: str, end_date: str,
+                                 project_id: str = None) -> list[dict]:
+    """File format distribution within a date range."""
+    params: list = [workspace_id, start_date, end_date]
+    filters = ""
+    if project_id:
+        filters += " AND f.project_id = ?"
+        params.append(project_id)
+    with get_db() as conn:
+        rows = conn.execute(
+            f"""SELECT f.file_format, COUNT(*) as count
+                FROM uploaded_files f
+                JOIN projects p ON f.project_id = p.id
+                WHERE p.workspace_id = ?
+                  AND date(f.uploaded_at) >= ? AND date(f.uploaded_at) <= ?
+                  {filters}
+                GROUP BY f.file_format
+                ORDER BY count DESC""",
+            tuple(params),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_recent_activity(workspace_id: str, start_date: str, end_date: str,
+                        project_id: str = None, user_id: str = None,
+                        limit: int = 50) -> list[dict]:
+    """Unified activity feed: credit events + analyses, sorted by time."""
+    credit_params: list = [workspace_id, start_date, end_date]
+    prompt_params: list = [workspace_id, start_date, end_date]
+    credit_filter = ""
+    prompt_filter = ""
+    if user_id:
+        credit_filter += " AND user_id = ?"
+        credit_params.append(user_id)
+        prompt_filter += " AND user_id = ?"
+        prompt_params.append(user_id)
+    if project_id:
+        prompt_filter += " AND project_id = ?"
+        prompt_params.append(project_id)
+
+    combined_params = credit_params + prompt_params + [limit]
+    with get_db() as conn:
+        rows = conn.execute(
+            f"""SELECT 'credit' as activity_type, reason as description,
+                       change_amount as detail_value, user_id, created_at
+                FROM credit_ledger
+                WHERE workspace_id = ?
+                  AND date(created_at) >= ? AND date(created_at) <= ?
+                  {credit_filter}
+                UNION ALL
+                SELECT 'analysis' as activity_type,
+                       SUBSTR(prompt_text, 1, 80) as description,
+                       tokens_used as detail_value, user_id, created_at
+                FROM prompt_history
+                WHERE workspace_id = ?
+                  AND date(created_at) >= ? AND date(created_at) <= ?
+                  {prompt_filter}
+                ORDER BY created_at DESC
+                LIMIT ?""",
+            tuple(combined_params),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+# =========================================================================
 # Admin Queries (global — no workspace scoping)
 # =========================================================================
 
