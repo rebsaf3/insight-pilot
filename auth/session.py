@@ -1,4 +1,13 @@
-"""Session management — tracks current user and workspace in Streamlit session state."""
+"""Session management — tracks current user and workspace.
+
+Uses browser cookies (via ``auth.cookies``) so sessions survive page
+refreshes and new WebSocket connections. The session token is persisted
+in both:
+
+  1. **SQLite** ``user_sessions`` table (server-side, validated on every request).
+  2. **Browser cookie** ``_ip_session`` (client-side, used to restore the
+     token into ``st.session_state`` after a refresh).
+"""
 
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -27,6 +36,11 @@ def create_user_session(user: User) -> str:
     # Store in Streamlit session state
     st.session_state["session_token"] = token
     st.session_state["user_id"] = user.id
+
+    # Persist in browser cookie so it survives page refresh
+    from auth.cookies import set_session_cookie
+    set_session_cookie(token)
+
     return token
 
 
@@ -43,18 +57,45 @@ def create_user_session_headless(user: User) -> str:
 
 
 def get_current_user() -> Optional[User]:
-    """Return the current authenticated User, or None."""
+    """Return the current authenticated User, or None.
+
+    Resolution order:
+      1. ``st.session_state["user_id"]``  — fastest, already resolved.
+      2. ``st.session_state["session_token"]`` — token in memory, validate
+         against DB.
+      3. Browser cookie via ``restore_session_from_cookie()`` — picks up
+         the token after a page refresh.
+    """
+    # 1. Already have user_id in memory
     user_id = st.session_state.get("user_id")
-    if not user_id:
-        token = st.session_state.get("session_token")
-        if not token:
-            return None
+    if user_id:
+        user = queries.get_user_by_id(user_id)
+        if user:
+            return user
+        # user_id was stale — clear and fall through
+        st.session_state.pop("user_id", None)
+
+    # 2. Have a session token in memory
+    token = st.session_state.get("session_token")
+    if token:
         session = queries.get_session_by_token(token)
-        if not session:
-            return None
-        st.session_state["user_id"] = session.user_id
-        user_id = session.user_id
-    return queries.get_user_by_id(user_id)
+        if session:
+            st.session_state["user_id"] = session.user_id
+            return queries.get_user_by_id(session.user_id)
+        # token was invalid/expired — clear
+        st.session_state.pop("session_token", None)
+
+    # 3. Try to restore from browser cookie
+    from auth.cookies import restore_session_from_cookie
+    token = restore_session_from_cookie()
+    if token:
+        session = queries.get_session_by_token(token)
+        if session:
+            st.session_state["session_token"] = token
+            st.session_state["user_id"] = session.user_id
+            return queries.get_user_by_id(session.user_id)
+
+    return None
 
 
 def require_auth() -> User:
@@ -67,12 +108,17 @@ def require_auth() -> User:
 
 
 def logout() -> None:
-    """Log out the current user — delete session and clear state."""
+    """Log out the current user — delete session, clear state, clear cookie."""
     token = st.session_state.get("session_token")
     if token:
         queries.delete_session_by_token(token)
+
     for key in ["session_token", "user_id", "current_workspace_id", "current_project_id"]:
         st.session_state.pop(key, None)
+
+    # Clear the browser cookie
+    from auth.cookies import clear_session_cookie
+    clear_session_cookie()
 
 
 # ---------------------------------------------------------------------------
