@@ -66,7 +66,7 @@ def show():
         elif i + 1 == step:
             col.info(label)
         else:
-            col.markdown(f"<span style='color:#999'>{label}</span>", unsafe_allow_html=True)
+            col.markdown(f"<span style='color:#9CA3AF'>{label}</span>", unsafe_allow_html=True)
 
     st.divider()
 

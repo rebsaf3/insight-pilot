@@ -12,8 +12,14 @@ from services.workspace_service import get_user_workspaces
 def render_sidebar(user: User) -> None:
     """Render the common sidebar with workspace selector and user info."""
     with st.sidebar:
-        st.markdown(f"**{user.display_name}**")
-        st.caption(user.email)
+        # User identity
+        st.markdown(
+            f"<div style='margin-bottom:4px'>"
+            f"<span style='font-weight:600;font-size:0.95rem;color:#111827'>{user.display_name}</span>"
+            f"</div>"
+            f"<div style='color:#6B7280;font-size:0.8rem;margin-bottom:12px'>{user.email}</div>",
+            unsafe_allow_html=True,
+        )
 
         st.divider()
 
@@ -55,7 +61,13 @@ def render_sidebar(user: User) -> None:
 
         # Upgrade prompt for free tier
         if selected_ws.tier == "free":
-            st.caption("Upgrade to Pro for more credits and features.")
+            st.markdown(
+                "<div style='background:#EEF0FC;border:1px solid #D4D9F7;border-radius:6px;"
+                "padding:8px 12px;margin-top:8px;font-size:0.8rem;color:#2D3FE0'>"
+                "Upgrade to Pro for more credits and features."
+                "</div>",
+                unsafe_allow_html=True,
+            )
 
         # Active project indicator
         project_id = get_current_project_id()
@@ -63,6 +75,10 @@ def render_sidebar(user: User) -> None:
             project = queries.get_project_by_id(project_id, selected_ws.id)
             if project:
                 st.divider()
-                st.caption(f"Active project: **{project.name}**")
+                st.markdown(
+                    f"<div style='font-size:0.8rem;color:#6B7280'>Active project</div>"
+                    f"<div style='font-weight:600;color:#111827;font-size:0.9rem'>{project.name}</div>",
+                    unsafe_allow_html=True,
+                )
 
         st.divider()

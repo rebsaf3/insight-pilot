@@ -23,6 +23,10 @@ def main():
         initial_sidebar_state="expanded",
     )
 
+    # Inject custom CSS theme
+    from components.theme import inject_custom_css
+    inject_custom_css()
+
     # Ensure storage directories exist
     _ensure_directories()
 

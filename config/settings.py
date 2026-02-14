@@ -185,7 +185,7 @@ AVAILABLE_FONTS = [
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
 
 CHART_PALETTES = {
-    "default": ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"],
+    "default": ["#2D3FE0", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"],
     "pastel": ["#a1c9f4", "#ffb482", "#8de5a1", "#ff9f9b", "#d0bbff", "#debb9b"],
     "vibrant": ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4"],
     "cool": ["#264653", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51", "#606c38"],

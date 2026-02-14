@@ -14,8 +14,12 @@ def show():
         return
 
     st.markdown(
-        f"<h1 style='text-align:center; margin-bottom:0'>{APP_TITLE}</h1>"
-        "<p style='text-align:center; color:#666; margin-top:0'>AI-powered data analytics</p>",
+        f"<div style='text-align:center;margin:2rem 0 1.5rem'>"
+        f"<h1 style='font-weight:700;color:#111827;letter-spacing:-0.025em;margin-bottom:4px'>"
+        f"{APP_TITLE}</h1>"
+        f"<p style='color:#6B7280;font-size:1.05rem;margin-top:0'>"
+        f"AI-powered data analytics</p>"
+        f"</div>",
         unsafe_allow_html=True,
     )
 
