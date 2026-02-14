@@ -161,7 +161,13 @@ a[data-testid="stBaseButton-secondary"]:hover {
 /* --- Hide Streamlit branding on login ------------------------------ */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
-header {visibility: hidden;}
+[data-testid="stHeader"] {
+    background: transparent !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+}
 </style>
 """
 

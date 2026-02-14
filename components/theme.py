@@ -287,9 +287,37 @@ hr {{
 }}
 
 /* --- Hide Streamlit branding --------------------------------------- */
+/* NOTE: Do NOT hide <header> — it loads the Material Symbols icon font.
+   Hiding it breaks all :material/ icons in navigation. */
 #MainMenu {{visibility: hidden;}}
 footer {{visibility: hidden;}}
-header {{visibility: hidden;}}
+[data-testid="stHeader"] {{
+    background: transparent !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+}}
+
+/* --- Sidebar content ordering — push custom widgets below nav ------ */
+section[data-testid="stSidebar"] > div:first-child {{
+    display: flex;
+    flex-direction: column;
+}}
+
+/* --- Sidebar navigation links — clean icon + label alignment ------- */
+[data-testid="stSidebarNav"] li a {{
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.9rem !important;
+}}
+
+[data-testid="stSidebarNav"] li a span[data-testid="stIconMaterial"] {{
+    font-size: 1.2rem !important;
+    line-height: 1 !important;
+}}
 
 </style>
 """
