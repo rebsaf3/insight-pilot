@@ -22,6 +22,16 @@ def show():
         st.warning("Project not found. Select one from the Projects page.")
         st.stop()
 
+    # Get files for this project
+    files = queries.get_files_for_project(project_id)
+    successful_files = [f for f in files if getattr(f, "status", "success") == "success"]
+
+    # Show landing page if wizard hasn't been started yet
+    if not st.session_state.get("analyze_wizard_active"):
+        _show_landing(user, ws, project, successful_files)
+        return
+
+    # ---- Wizard mode ----
     # Store project instructions for use in generation
     st.session_state["project_instructions"] = project.instructions or ""
 
@@ -30,14 +40,12 @@ def show():
         with st.expander("Active Project Instructions", expanded=False, icon=":material/description:"):
             st.info(project.instructions)
 
-    # Get files for this project
-    files = queries.get_files_for_project(project_id)
-    if not files:
-        st.warning("No data files in this project. Upload data first.")
+    if not successful_files:
+        st.warning("No successfully imported data files in this project. Upload data first.")
         st.stop()
 
     # File selector
-    file_names = {f.id: f.original_filename for f in files}
+    file_names = {f.id: f.original_filename for f in successful_files}
     selected_file_id = st.selectbox(
         "Select Data File",
         list(file_names.keys()),
@@ -76,6 +84,73 @@ def show():
         _step_review(user, ws, selected_file)
     elif step == 3:
         _step_save(user, ws, selected_file)
+
+
+def _show_landing(user, ws, project, files):
+    """Show the analyze landing page with project context and quick actions."""
+    # Project context card
+    st.markdown(
+        f"<div class='ip-card' style='margin-bottom:1.5rem'>"
+        f"<div style='display:flex;align-items:center;gap:0.75rem'>"
+        f"<div style='font-size:1.5rem'>:material/folder:</div>"
+        f"<div>"
+        f"<div style='font-weight:700;font-size:1rem'>{project.name}</div>"
+        f"<div style='font-size:0.82rem;color:#57534E'>"
+        f"{project.description or 'No description'}</div>"
+        f"</div>"
+        f"</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    if not files:
+        st.warning("No data files in this project. Upload data first.")
+        return
+
+    # Quick action cards
+    st.markdown("<div class='ip-section-header'><h3>Quick Actions</h3></div>", unsafe_allow_html=True)
+    actions = [
+        (":material/trending_up:", "Trend Analysis", "Track patterns over time"),
+        (":material/bar_chart:", "Comparison", "Compare categories and groups"),
+        (":material/summarize:", "Summary", "Get a data overview"),
+        (":material/edit:", "Custom Prompt", "Describe exactly what you need"),
+    ]
+    action_cols = st.columns(len(actions))
+    for col, (icon, title, desc) in zip(action_cols, actions):
+        with col:
+            st.markdown(
+                f"<div class='ip-action-card'>"
+                f"<div class='icon'>{icon}</div>"
+                f"<div class='title'>{title}</div>"
+                f"<div class='desc'>{desc}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+
+    # Start new analysis button
+    st.markdown("")
+    if st.button("Start New Analysis", type="primary", use_container_width=True, icon=":material/analytics:"):
+        st.session_state["analyze_wizard_active"] = True
+        st.session_state["wizard_step"] = 1
+        st.rerun()
+
+    # Recent analyses
+    recent = queries.get_prompt_history(ws.id, project.id, limit=5)
+    if recent:
+        st.markdown("<div class='ip-section-header' style='margin-top:1.5rem'><h3>Recent Analyses</h3></div>", unsafe_allow_html=True)
+        for entry in recent:
+            prompt_preview = entry.prompt_text[:100] + ("..." if len(entry.prompt_text) > 100 else "")
+            status_cls = "ip-badge-success" if not entry.response_error else "ip-badge-error"
+            status_label = "Success" if not entry.response_error else "Error"
+            st.markdown(
+                f"<div style='display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;"
+                f"border-bottom:1px solid #F5F5F4;font-family:Inter,sans-serif'>"
+                f"<div style='flex:1;font-size:0.85rem'>{prompt_preview}</div>"
+                f"<div style='font-size:0.72rem;color:#A8A29E'>{entry.tokens_used} tokens</div>"
+                f"<span class='ip-badge {status_cls}'>{status_label}</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
 
 
 def _step_describe(user, ws, selected_file):

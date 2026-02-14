@@ -37,13 +37,35 @@ def show():
         accent = col3.color_picker("Accent Color", value=branding.accent_color if branding else "#FF6F00")
 
     with tab_fonts:
-        st.subheader("Typography")
+        st.subheader("Report Typography")
+        st.caption(
+            "These font settings apply to exported reports, dashboards, and charts. "
+            "They do not change the app interface font."
+        )
         font_family = st.selectbox(
             "Font Family",
             AVAILABLE_FONTS,
             index=AVAILABLE_FONTS.index(branding.font_family) if branding and branding.font_family in AVAILABLE_FONTS else 0,
+            help="Choose a font for your exported reports and charts",
         )
         font_size = st.slider("Base Font Size", 10, 20, value=branding.font_size_base if branding else 14)
+
+        # Live font preview card
+        st.markdown("#### Preview")
+        st.markdown(
+            f"<div class='ip-card' style='padding:1.5rem'>"
+            f"<div style='font-family:{font_family},sans-serif;font-size:{font_size + 6}px;"
+            f"font-weight:700;color:#1C1917;margin-bottom:0.5rem'>Report Heading</div>"
+            f"<div style='font-family:{font_family},sans-serif;font-size:{font_size}px;"
+            f"color:#57534E;line-height:1.6;margin-bottom:0.75rem'>"
+            f"This is how body text will appear in your exported reports. "
+            f"The quick brown fox jumps over the lazy dog.</div>"
+            f"<div style='font-family:{font_family},sans-serif;font-size:{font_size}px;"
+            f"color:#1C1917;font-weight:600'>Revenue: $1,234,567.89 &nbsp; | &nbsp; "
+            f"Growth: +12.3% &nbsp; | &nbsp; Users: 8,421</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
     with tab_logo:
         st.subheader("Logo")

@@ -18,6 +18,8 @@ class User:
     sso_provider: Optional[str]
     sso_provider_id: Optional[str]
     is_superadmin: bool = False
+    first_name: str = ""
+    last_name: str = ""
     created_at: str = ""
     updated_at: str = ""
 
@@ -55,8 +57,9 @@ class Workspace:
     stripe_customer_id: Optional[str]
     sso_enabled: bool
     sso_config: Optional[dict]
-    created_at: str
-    updated_at: str
+    trial_ends_at: Optional[str] = None
+    created_at: str = ""
+    updated_at: str = ""
 
     def __post_init__(self):
         if isinstance(self.sso_config, str):
@@ -114,7 +117,9 @@ class UploadedFile:
     column_count: Optional[int]
     column_names: Optional[list[str]]
     data_profile: Optional[dict]
-    uploaded_at: str
+    status: str = "success"
+    error_message: Optional[str] = None
+    uploaded_at: str = ""
 
     def __post_init__(self):
         if isinstance(self.column_names, str):
@@ -310,6 +315,25 @@ class SystemSetting:
     value: str
     updated_by: Optional[str] = None
     updated_at: str = ""
+
+
+@dataclass
+class UserPreferences:
+    id: str
+    user_id: str
+    theme: str = "light"
+    notification_email: bool = True
+    notification_in_app: bool = True
+    notification_billing: bool = True
+    notification_product: bool = True
+    updated_at: str = ""
+
+    def __post_init__(self):
+        for attr in ("notification_email", "notification_in_app",
+                      "notification_billing", "notification_product"):
+            val = getattr(self, attr)
+            if isinstance(val, int):
+                setattr(self, attr, bool(val))
 
 
 # ---------------------------------------------------------------------------

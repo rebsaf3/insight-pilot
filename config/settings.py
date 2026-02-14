@@ -171,6 +171,46 @@ TOKENS_PER_CREDIT = 1000
 TOPUP_CREDITS = 100
 TOPUP_PRICE_CENTS = 1000  # $10.00
 
+# Tiered credit bundles
+CREDIT_BUNDLES = [
+    {"credits": 100,  "price_cents": 1000, "label": "Starter",    "per_credit": "$0.10"},
+    {"credits": 250,  "price_cents": 2000, "label": "Popular",    "per_credit": "$0.08", "badge": "Popular"},
+    {"credits": 500,  "price_cents": 3500, "label": "Growth",     "per_credit": "$0.07"},
+    {"credits": 1000, "price_cents": 6000, "label": "Best Value", "per_credit": "$0.06", "badge": "Best Value"},
+]
+
+# Available add-ons
+AVAILABLE_ADDONS = [
+    {
+        "type": "api_access",
+        "name": "API Access",
+        "description": "Full REST API for data push, pull, and CRUD operations",
+        "price_monthly": 15,
+        "icon": "api",
+    },
+    {
+        "type": "priority_support",
+        "name": "Priority Support",
+        "description": "24-hour response SLA with dedicated support channel",
+        "price_monthly": 10,
+        "icon": "support_agent",
+    },
+    {
+        "type": "advanced_exports",
+        "name": "Advanced Exports",
+        "description": "Export to PowerPoint, Word, and custom PDF templates",
+        "price_monthly": 8,
+        "icon": "file_download",
+    },
+]
+
+# ---------------------------------------------------------------------------
+# Trial
+# ---------------------------------------------------------------------------
+TRIAL_DAYS = 7
+TRIAL_TIER = "pro"
+TRIAL_CREDITS = 200
+
 # ---------------------------------------------------------------------------
 # Branding font options (Pro tier)
 # ---------------------------------------------------------------------------

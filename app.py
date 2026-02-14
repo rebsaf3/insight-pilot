@@ -6,13 +6,32 @@ import streamlit as st
 
 from config.settings import APP_TITLE, STORAGE_DIR, UPLOADS_DIR, LOGOS_DIR, EXPORTS_DIR
 from db.database import init_db
-from auth.session import get_current_user, logout
+from auth.session import get_current_user, logout, get_current_workspace
 
 
 def _ensure_directories() -> None:
     """Create required storage directories if they don't exist."""
     for d in (STORAGE_DIR, UPLOADS_DIR, LOGOS_DIR, EXPORTS_DIR):
         d.mkdir(parents=True, exist_ok=True)
+
+
+def _get_user_theme(user) -> str:
+    """Return the user's preferred theme ('light' or 'dark')."""
+    if user is None:
+        return "light"
+    from db.queries import get_user_preferences
+    prefs = get_user_preferences(user.id)
+    return prefs.theme if prefs else "light"
+
+
+def _check_trial_expiry() -> None:
+    """Auto-downgrade workspaces whose trial has expired."""
+    ws = get_current_workspace()
+    if ws is None:
+        return
+    from services.workspace_service import check_trial_status, expire_trial
+    if check_trial_status(ws.id) == "expired" and ws.tier != "free":
+        expire_trial(ws.id)
 
 
 def main():
@@ -22,10 +41,6 @@ def main():
         layout="wide",
         initial_sidebar_state="expanded",
     )
-
-    # Inject custom CSS theme
-    from components.theme import inject_custom_css
-    inject_custom_css()
 
     # Ensure storage directories exist
     _ensure_directories()
@@ -38,6 +53,15 @@ def main():
     ensure_superadmin()
 
     user = get_current_user()
+
+    # Inject custom CSS theme (respects user dark-mode preference)
+    from components.theme import inject_custom_css
+    theme = _get_user_theme(user)
+    inject_custom_css(theme=theme)
+
+    # Auto-downgrade expired trials on every page load
+    if user:
+        _check_trial_expiry()
 
     if user is None:
         # Unauthenticated — only show login

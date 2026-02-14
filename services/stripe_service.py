@@ -102,6 +102,37 @@ def create_addon_checkout(user_email: str, workspace_id: str, addon_type: str) -
 # Subscription management
 # ---------------------------------------------------------------------------
 
+def create_bundle_checkout(user_email: str, workspace_id: str, user_id: str,
+                            bundle: dict) -> str:
+    """Create a Stripe Checkout for a credit bundle purchase."""
+    customer_id = get_or_create_customer(user_email, workspace_id)
+
+    session = stripe.checkout.Session.create(
+        customer=customer_id,
+        mode="payment",
+        line_items=[{
+            "price_data": {
+                "currency": "usd",
+                "unit_amount": bundle["price_cents"],
+                "product_data": {
+                    "name": f"{bundle['label']} Credit Bundle — {bundle['credits']} credits",
+                },
+            },
+            "quantity": 1,
+        }],
+        success_url=f"{BASE_URL}/?topup=success",
+        cancel_url=f"{BASE_URL}/?topup=cancel",
+        metadata={
+            "workspace_id": workspace_id,
+            "user_id": user_id,
+            "type": "topup",
+            "credits": str(bundle["credits"]),
+            "price_cents": str(bundle["price_cents"]),
+        },
+    )
+    return session.url
+
+
 def cancel_subscription(workspace_id: str) -> bool:
     """Cancel subscription at period end."""
     sub = queries.get_subscription(workspace_id)
@@ -131,6 +162,45 @@ def get_subscription_status(workspace_id: str) -> Optional[dict]:
         }
     except stripe.StripeError:
         return {"tier": sub.tier, "status": sub.status}
+
+
+def get_payment_methods(workspace_id: str) -> list[dict]:
+    """List saved payment methods for a workspace's Stripe customer."""
+    ws = queries.get_workspace_by_id(workspace_id)
+    if not ws or not ws.stripe_customer_id:
+        return []
+    try:
+        methods = stripe.PaymentMethod.list(
+            customer=ws.stripe_customer_id,
+            type="card",
+        )
+        return [
+            {
+                "id": m.id,
+                "brand": m.card.brand.title() if m.card else "Card",
+                "last4": m.card.last4 if m.card else "****",
+                "exp_month": m.card.exp_month if m.card else 0,
+                "exp_year": m.card.exp_year if m.card else 0,
+            }
+            for m in methods.data
+        ]
+    except stripe.StripeError:
+        return []
+
+
+def create_billing_portal_url(workspace_id: str) -> Optional[str]:
+    """Create a Stripe Billing Portal URL for managing payment methods."""
+    ws = queries.get_workspace_by_id(workspace_id)
+    if not ws or not ws.stripe_customer_id:
+        return None
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=ws.stripe_customer_id,
+            return_url=f"{BASE_URL}/",
+        )
+        return session.url
+    except stripe.StripeError:
+        return None
 
 
 # ---------------------------------------------------------------------------

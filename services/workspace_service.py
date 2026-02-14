@@ -1,8 +1,9 @@
-"""Workspace management — creation, invitation, role enforcement."""
+"""Workspace management — creation, invitation, role enforcement, trials."""
 
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from config.settings import TIERS
+from config.settings import TIERS, TRIAL_DAYS, TRIAL_TIER, TRIAL_CREDITS
 from db import queries
 from db.models import Workspace, WorkspaceMember
 
@@ -136,3 +137,97 @@ def accept_invitation(token: str, user_id: str) -> tuple[bool, str]:
     queries.accept_invitation(invitation.id)
 
     return True, "Welcome to the workspace!"
+
+
+# =========================================================================
+# Trial Management
+# =========================================================================
+
+def start_trial(workspace_id: str, user_id: str) -> bool:
+    """Activate a 7-day Pro trial for a workspace.
+
+    Sets the workspace tier to Pro, grants trial credits, and records
+    ``trial_ends_at``.  Called once during registration.
+    """
+    trial_end = (datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+    # Upgrade tier and set trial expiry
+    queries.update_workspace(workspace_id, tier=TRIAL_TIER, trial_ends_at=trial_end)
+
+    # Update the subscription to match the trial tier
+    sub = queries.get_subscription(workspace_id)
+    if sub:
+        tier_cfg = TIERS[TRIAL_TIER]
+        queries.update_subscription(
+            sub.id, tier=TRIAL_TIER,
+            monthly_credit_allowance=tier_cfg["monthly_credits"],
+        )
+
+    # Grant trial credits
+    current_balance = queries.get_credit_balance(workspace_id)
+    queries.add_credit_entry(
+        workspace_id=workspace_id,
+        user_id=user_id,
+        change_amount=TRIAL_CREDITS,
+        balance_after=current_balance + TRIAL_CREDITS,
+        reason="Pro trial activated — 7-day trial credits",
+    )
+
+    return True
+
+
+def check_trial_status(workspace_id: str) -> str:
+    """Return the trial status for a workspace.
+
+    Returns one of:
+    - ``"active"`` — trial is running, trial_ends_at is in the future
+    - ``"expired"`` — trial_ends_at has passed
+    - ``"none"`` — workspace was never on a trial
+    """
+    ws = queries.get_workspace_by_id(workspace_id)
+    if not ws or not ws.trial_ends_at:
+        return "none"
+    try:
+        ends = datetime.fromisoformat(ws.trial_ends_at)
+        if ends.tzinfo is None:
+            ends = ends.replace(tzinfo=timezone.utc)
+        if ends > datetime.now(timezone.utc):
+            return "active"
+        return "expired"
+    except (ValueError, TypeError):
+        return "none"
+
+
+def get_trial_days_remaining(workspace_id: str) -> int:
+    """Return the number of full days remaining in the trial, or 0."""
+    ws = queries.get_workspace_by_id(workspace_id)
+    if not ws or not ws.trial_ends_at:
+        return 0
+    try:
+        ends = datetime.fromisoformat(ws.trial_ends_at)
+        if ends.tzinfo is None:
+            ends = ends.replace(tzinfo=timezone.utc)
+        delta = ends - datetime.now(timezone.utc)
+        return max(0, delta.days)
+    except (ValueError, TypeError):
+        return 0
+
+
+def expire_trial(workspace_id: str) -> bool:
+    """Downgrade a workspace whose trial has ended back to the free tier.
+
+    Called during the app startup check (``app.py``) so expiry is enforced
+    on every page load.
+    """
+    queries.update_workspace(workspace_id, tier="free")
+
+    sub = queries.get_subscription(workspace_id)
+    if sub:
+        free_cfg = TIERS["free"]
+        queries.update_subscription(
+            sub.id, tier="free",
+            monthly_credit_allowance=free_cfg["monthly_credits"],
+        )
+    return True

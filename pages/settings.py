@@ -1,9 +1,9 @@
-"""Account settings page — profile, password, 2FA, sessions."""
+"""Account settings page — profile, password, 2FA, preferences, team, sessions."""
 
 import streamlit as st
 
 from auth.authenticator import hash_password, verify_password
-from auth.session import require_auth, logout
+from auth.session import require_auth, logout, get_current_workspace
 from db import queries
 from services.tfa_service import (
     generate_totp_secret, get_totp_qr_code, enable_totp, verify_totp,
@@ -15,21 +15,35 @@ def show():
     user = require_auth()
     st.title("Account Settings")
 
-    tab_profile, tab_security, tab_tfa, tab_sessions = st.tabs(
-        ["Profile", "Password", "Two-Factor Auth", "Sessions"]
+    tab_profile, tab_security, tab_tfa, tab_prefs, tab_team, tab_sessions = st.tabs(
+        ["Profile", "Password", "Two-Factor Auth", "Preferences", "Team", "Sessions"]
     )
 
     # ------------------------------------------------------------------ Profile
     with tab_profile:
         st.subheader("Profile Information")
         with st.form("profile_form"):
+            col_fn, col_ln = st.columns(2)
+            first_name = col_fn.text_input(
+                "First Name",
+                value=getattr(user, "first_name", "") or "",
+            )
+            last_name = col_ln.text_input(
+                "Last Name",
+                value=getattr(user, "last_name", "") or "",
+            )
             new_name = st.text_input("Display Name", value=user.display_name)
             new_email = st.text_input("Email", value=user.email, disabled=True,
                                        help="Email cannot be changed")
             submitted = st.form_submit_button("Save Changes", use_container_width=True)
         if submitted:
             if new_name.strip():
-                queries.update_user(user.id, display_name=new_name.strip())
+                queries.update_user(
+                    user.id,
+                    display_name=new_name.strip(),
+                    first_name=first_name.strip(),
+                    last_name=last_name.strip(),
+                )
                 st.success("Profile updated.")
                 st.rerun()
             else:
@@ -175,6 +189,57 @@ def show():
             for c in codes:
                 st.code(c, language=None)
 
+    # ------------------------------------------------------------------ Preferences
+    with tab_prefs:
+        st.subheader("Preferences")
+
+        prefs = queries.get_user_preferences(user.id)
+        current_theme = prefs.theme if prefs else "light"
+        current_notif_email = prefs.notification_email if prefs else True
+        current_notif_billing = prefs.notification_billing if prefs else True
+        current_notif_product = prefs.notification_product if prefs else True
+
+        st.markdown("### Appearance")
+        theme = st.selectbox(
+            "Theme",
+            ["light", "dark"],
+            index=0 if current_theme == "light" else 1,
+            format_func=lambda t: "Light" if t == "light" else "Dark",
+            help="Changes the app color scheme. Reload may be required.",
+        )
+
+        st.markdown("### Notifications")
+        notif_email = st.toggle(
+            "Email notifications",
+            value=current_notif_email,
+            help="Receive email notifications for important events",
+        )
+        notif_billing = st.toggle(
+            "Billing notifications",
+            value=current_notif_billing,
+            help="Get notified about billing events (credit low, subscription renewals)",
+        )
+        notif_product = st.toggle(
+            "Product updates",
+            value=current_notif_product,
+            help="Receive updates about new features and improvements",
+        )
+
+        if st.button("Save Preferences", type="primary", use_container_width=True):
+            queries.upsert_user_preferences(
+                user.id,
+                theme=theme,
+                notification_email=1 if notif_email else 0,
+                notification_billing=1 if notif_billing else 0,
+                notification_product=1 if notif_product else 0,
+            )
+            st.success("Preferences saved.")
+            st.rerun()
+
+    # ------------------------------------------------------------------ Team
+    with tab_team:
+        _show_team_tab(user)
+
     # ------------------------------------------------------------------ Sessions
     with tab_sessions:
         st.subheader("Active Sessions")
@@ -209,6 +274,101 @@ def show():
                         queries.delete_session(s.id)
                 st.success("All other sessions revoked.")
                 st.rerun()
+
+
+def _show_team_tab(user):
+    """Team management — view members, invite, change roles."""
+    st.subheader("Team Members")
+
+    ws = get_current_workspace()
+    if not ws:
+        st.warning("No workspace selected.")
+        return
+
+    role = queries.get_member_role(ws.id, user.id)
+    is_admin = role in ("owner", "admin")
+
+    # List members
+    members = queries.get_workspace_members(ws.id)
+    for m in members:
+        member_user = queries.get_user_by_id(m.user_id)
+        if not member_user:
+            continue
+
+        role_mapping = {
+            "owner": ("ip-badge ip-badge-info", "Owner"),
+            "admin": ("ip-badge ip-badge-success", "Admin"),
+            "member": ("ip-badge ip-badge-pending", "Member"),
+            "viewer": ("ip-badge", "Viewer"),
+        }
+        cls, label = role_mapping.get(m.role, ("ip-badge", m.role.title()))
+
+        st.markdown(
+            f"<div class='ip-card' style='display:flex;align-items:center;gap:1rem;"
+            f"padding:0.75rem 1rem;margin-bottom:0.5rem'>"
+            f"<div style='flex:1'>"
+            f"<div style='font-weight:600;font-size:0.9rem'>"
+            f"{member_user.display_name}</div>"
+            f"<div style='font-size:0.78rem;color:#57534E'>{member_user.email}</div>"
+            f"</div>"
+            f"<span class='{cls}'>{label}</span>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+        # Admin actions (not for self, not for owner)
+        if is_admin and m.user_id != user.id and m.role != "owner":
+            ac1, ac2 = st.columns(2)
+            with ac1:
+                new_role = st.selectbox(
+                    "Role",
+                    ["admin", "member", "viewer"],
+                    index=["admin", "member", "viewer"].index(m.role) if m.role in ("admin", "member", "viewer") else 1,
+                    key=f"role_{m.user_id}",
+                    label_visibility="collapsed",
+                )
+                if new_role != m.role:
+                    if st.button("Update Role", key=f"update_role_{m.user_id}"):
+                        queries.update_member_role(ws.id, m.user_id, new_role)
+                        st.success(f"Role updated to {new_role}.")
+                        st.rerun()
+            with ac2:
+                if st.button("Remove", key=f"remove_{m.user_id}"):
+                    queries.remove_workspace_member(ws.id, m.user_id)
+                    st.success("Member removed.")
+                    st.rerun()
+
+    # Invite form (admin only)
+    if is_admin:
+        st.divider()
+        st.markdown("### Invite Member")
+        with st.form("invite_member_form"):
+            invite_email = st.text_input("Email address", placeholder="colleague@company.com")
+            invite_role = st.selectbox("Role", ["member", "admin", "viewer"])
+            invite_submitted = st.form_submit_button("Send Invitation", use_container_width=True)
+
+        if invite_submitted and invite_email:
+            from services.workspace_service import invite_member
+            success, result = invite_member(ws.id, invite_email, invite_role, user.id)
+            if success:
+                st.success(f"Invitation sent to {invite_email}.")
+            else:
+                st.error(result)
+
+    # Pending invitations
+    if is_admin:
+        pending = queries.get_pending_invitations(ws.id)
+        if pending:
+            st.divider()
+            st.markdown("### Pending Invitations")
+            for inv in pending:
+                ic1, ic2, ic3 = st.columns([3, 1, 1])
+                ic1.markdown(f"**{inv.email}** — {inv.role}")
+                ic2.caption(f"Expires: {inv.expires_at[:10]}")
+                if ic3.button("Revoke", key=f"revoke_inv_{inv.id}"):
+                    queries.revoke_invitation(inv.id)
+                    st.success("Invitation revoked.")
+                    st.rerun()
 
 
 show()

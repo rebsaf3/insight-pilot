@@ -11,6 +11,7 @@ from db.models import (
     Project, UploadedFile, Dashboard, Chart, CreditLedgerEntry,
     Subscription, CreditPurchase, AddOn, WorkspaceBranding, ApiKey,
     PromptHistoryEntry, PromptTemplate, AuditLogEntry, SystemSetting,
+    UserPreferences,
     row_to_model, rows_to_models,
 )
 
@@ -1363,3 +1364,122 @@ def set_superadmin_by_email(email: str) -> bool:
             (email.strip().lower(),),
         )
     return True
+
+
+# =========================================================================
+# File Upload Status
+# =========================================================================
+
+def update_file_status(file_id: str, status: str, error_message: str = None) -> bool:
+    """Update the processing status of an uploaded file."""
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE uploaded_files SET status = ?, error_message = ? WHERE id = ?",
+            (status, error_message, file_id),
+        )
+    return True
+
+
+# =========================================================================
+# Project Activity Summary
+# =========================================================================
+
+def get_project_activity_summary(project_id: str) -> dict:
+    """Aggregate activity stats for a project."""
+    with get_db() as conn:
+        files_row = conn.execute(
+            """SELECT COUNT(*) as total,
+                      SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) as success,
+                      SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors
+               FROM uploaded_files WHERE project_id = ?""",
+            (project_id,),
+        ).fetchone()
+        dash_row = conn.execute(
+            "SELECT COUNT(*) as cnt FROM dashboards WHERE project_id = ?",
+            (project_id,),
+        ).fetchone()
+        analysis_row = conn.execute(
+            "SELECT COUNT(*) as cnt FROM prompt_history WHERE project_id = ?",
+            (project_id,),
+        ).fetchone()
+        last_row = conn.execute(
+            """SELECT MAX(ts) as last_at FROM (
+                SELECT uploaded_at as ts FROM uploaded_files WHERE project_id = ?
+                UNION ALL
+                SELECT created_at as ts FROM prompt_history WHERE project_id = ?
+                UNION ALL
+                SELECT created_at as ts FROM dashboards WHERE project_id = ?
+            )""",
+            (project_id, project_id, project_id),
+        ).fetchone()
+    return {
+        "files_total": files_row["total"] or 0,
+        "files_success": files_row["success"] or 0,
+        "files_error": files_row["errors"] or 0,
+        "dashboards_count": dash_row["cnt"] or 0,
+        "analyses_count": analysis_row["cnt"] or 0,
+        "last_activity": last_row["last_at"],
+    }
+
+
+# =========================================================================
+# User Preferences
+# =========================================================================
+
+def get_user_preferences(user_id: str) -> Optional[UserPreferences]:
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM user_preferences WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+    return row_to_model(row, UserPreferences)
+
+
+def upsert_user_preferences(user_id: str, **kwargs) -> str:
+    existing = get_user_preferences(user_id)
+    if existing:
+        if not kwargs:
+            return existing.id
+        kwargs["updated_at"] = "datetime('now')"
+        sets = []
+        vals = []
+        for k, v in kwargs.items():
+            if v == "datetime('now')":
+                sets.append(f"{k} = datetime('now')")
+            else:
+                sets.append(f"{k} = ?")
+                vals.append(v)
+        vals.append(user_id)
+        sql = f"UPDATE user_preferences SET {', '.join(sets)} WHERE user_id = ?"
+        with get_db() as conn:
+            conn.execute(sql, tuple(vals))
+        return existing.id
+    else:
+        pid = _new_id()
+        cols = ["id", "user_id"]
+        placeholders = ["?", "?"]
+        vals = [pid, user_id]
+        for k, v in kwargs.items():
+            if k == "updated_at":
+                continue
+            cols.append(k)
+            placeholders.append("?")
+            vals.append(v)
+        sql = f"INSERT INTO user_preferences ({', '.join(cols)}) VALUES ({', '.join(placeholders)})"
+        with get_db() as conn:
+            conn.execute(sql, tuple(vals))
+        return pid
+
+
+# =========================================================================
+# Trial Status
+# =========================================================================
+
+def is_workspace_in_trial(workspace_id: str) -> bool:
+    """Check if workspace is in an active trial period."""
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT trial_ends_at FROM workspaces WHERE id = ? AND trial_ends_at > datetime('now')",
+            (workspace_id,),
+        ).fetchone()
+    return row is not None

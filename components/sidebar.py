@@ -11,7 +11,11 @@ from auth.session import get_current_workspace, set_current_workspace, get_curre
 from config.settings import TIERS
 from db import queries
 from db.models import User
-from services.workspace_service import get_user_workspaces
+from services.workspace_service import (
+    get_user_workspaces,
+    check_trial_status,
+    get_trial_days_remaining,
+)
 
 
 def render_sidebar(user: User) -> None:
@@ -48,6 +52,9 @@ def render_sidebar(user: User) -> None:
             set_current_workspace(selected_ws.id)
             st.rerun()
 
+        # ----- Trial banner -----
+        _render_trial_banner(selected_ws)
+
         # ----- Tier and credit balance -----
         tier_config = TIERS.get(selected_ws.tier, TIERS["free"])
         balance = queries.get_credit_balance(selected_ws.id)
@@ -58,8 +65,9 @@ def render_sidebar(user: User) -> None:
         with col2:
             st.metric("Plan", tier_config["name"])
 
-        # Upgrade prompt for free tier
-        if selected_ws.tier == "free":
+        # Upgrade prompt for free tier (only if not on active trial)
+        trial_status = check_trial_status(selected_ws.id)
+        if selected_ws.tier == "free" and trial_status != "active":
             st.markdown(
                 "<div style='background:#F0FDFA;border:1px solid #CCFBF1;border-radius:8px;"
                 "padding:8px 12px;margin-top:4px;font-size:0.78rem;color:#0F766E;"
@@ -94,5 +102,32 @@ def render_sidebar(user: User) -> None:
             f"{user.display_name}</div>"
             f"<div style='color:#A8A29E;font-size:0.75rem'>{user.email}</div>"
             f"</div>",
+            unsafe_allow_html=True,
+        )
+
+
+def _render_trial_banner(workspace) -> None:
+    """Show a trial status banner if applicable."""
+    trial_status = check_trial_status(workspace.id)
+
+    if trial_status == "active":
+        days = get_trial_days_remaining(workspace.id)
+        day_word = "day" if days == 1 else "days"
+        st.markdown(
+            f"<div class='ip-trial-banner'>"
+            f"<div class='label'>&#x1F680; Pro Trial</div>"
+            f"<div class='days'>{days} {day_word} remaining</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+    elif trial_status == "expired" and workspace.tier == "free":
+        st.markdown(
+            "<div style='background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;"
+            "padding:10px 14px;margin-bottom:12px;font-family:Inter,sans-serif'>"
+            "<div style='font-size:0.7rem;font-weight:600;text-transform:uppercase;"
+            "letter-spacing:0.06em;color:#DC2626;margin-bottom:2px'>Trial Ended</div>"
+            "<div style='font-size:0.82rem;color:#1C1917;font-weight:500'>"
+            "Upgrade to keep Pro features</div>"
+            "</div>",
             unsafe_allow_html=True,
         )

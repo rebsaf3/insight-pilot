@@ -75,6 +75,7 @@ def show():
         max_members = tier_config["max_members"]
 
         st.subheader(f"Members ({len(members)}" + (f"/{max_members}" if max_members > 0 else "") + ")")
+        st.caption("You can also manage team members from **Account > Team** tab.")
 
         for m in members:
             member_user = queries.get_user_by_id(m.user_id)

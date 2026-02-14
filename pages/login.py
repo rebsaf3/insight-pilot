@@ -263,14 +263,16 @@ def show():
                 return
 
             user_id = result
-            # Create personal workspace
-            create_personal_workspace(user_id, reg_name)
+            # Create personal workspace and start 7-day Pro trial
+            ws_id = create_personal_workspace(user_id, reg_name)
+            from services.workspace_service import start_trial
+            start_trial(ws_id, user_id)
 
             # Auto-login
             from db.queries import get_user_by_id
             user = get_user_by_id(user_id)
             create_user_session(user)
-            st.success("Account created! Welcome to InsightPilot.")
+            st.success("Account created! Your 7-day Pro trial has started.")
             st.rerun()
 
     # Footer

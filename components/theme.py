@@ -52,9 +52,11 @@ RADIUS_XL = "16px"               # Large containers
 FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 
 
-def inject_custom_css() -> None:
+def inject_custom_css(theme: str = "light") -> None:
     """Inject the full custom CSS stylesheet into the Streamlit app."""
     st.markdown(_FONT_LINK + _CSS, unsafe_allow_html=True)
+    if theme == "dark":
+        st.markdown(_DARK_CSS, unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
@@ -110,10 +112,11 @@ p, li, label, div:not([data-testid]) {{
     font-family: {FONT_STACK} !important;
 }}
 
-/* --- Sidebar ------------------------------------------------------- */
+/* --- Sidebar — strong visual separation from content --------------- */
 section[data-testid="stSidebar"] {{
     background-color: {BG_SECTION} !important;
     border-right: 1px solid {BORDER} !important;
+    box-shadow: 2px 0 16px rgba(28,25,23,0.06), 1px 0 4px rgba(28,25,23,0.03) !important;
 }}
 
 section[data-testid="stSidebar"] .stMarkdown {{
@@ -319,9 +322,6 @@ hr {{
 }}
 
 /* --- Hide Streamlit branding --------------------------------------- */
-/* Keep header in the DOM (it loads Material Symbols font) but make it
-   invisible and non-interactive.  Do NOT use height:0/overflow:hidden
-   because browsers skip font loading for collapsed elements. */
 #MainMenu {{visibility: hidden;}}
 footer {{visibility: hidden;}}
 [data-testid="stHeader"] {{
@@ -333,13 +333,13 @@ footer {{visibility: hidden;}}
     display: none !important;
 }}
 
-/* --- Sidebar content ordering — push custom widgets below nav ------ */
+/* --- Sidebar content ordering -------------------------------------- */
 section[data-testid="stSidebar"] > div:first-child {{
     display: flex;
     flex-direction: column;
 }}
 
-/* --- Sidebar navigation links — clean icon + label alignment ------- */
+/* --- Sidebar navigation links -------------------------------------- */
 [data-testid="stSidebarNav"] li a {{
     display: flex !important;
     align-items: center !important;
@@ -362,6 +362,290 @@ section[data-testid="stSidebar"] > div:first-child {{
     font-weight: 600 !important;
     padding: 0.5rem 0.75rem 0.25rem !important;
     margin: 0 !important;
+}}
+
+/* ====================================================================
+   Reusable utility classes (used by pages via st.markdown)
+   ==================================================================== */
+
+/* --- Card containers ----------------------------------------------- */
+.ip-card {{
+    background: {SURFACE};
+    border: 1px solid {BORDER};
+    border-radius: {RADIUS};
+    padding: 1.25rem 1.5rem;
+    box-shadow: {SHADOW_SM};
+    margin-bottom: 1rem;
+    font-family: {FONT_STACK};
+}}
+.ip-card-hover {{
+    transition: all 0.2s ease;
+    cursor: pointer;
+}}
+.ip-card-hover:hover {{
+    box-shadow: {SHADOW_MD};
+    border-color: {PRIMARY};
+    transform: translateY(-2px);
+}}
+
+/* --- Section headers ----------------------------------------------- */
+.ip-section-header {{
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid {BORDER_LIGHT};
+    font-family: {FONT_STACK};
+}}
+.ip-section-header h3 {{
+    margin: 0 !important;
+    font-size: 1.1rem !important;
+}}
+
+/* --- Status badges ------------------------------------------------- */
+.ip-badge {{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: {FONT_STACK};
+    letter-spacing: 0.02em;
+}}
+.ip-badge-success {{ background: #ECFDF5; color: #059669; }}
+.ip-badge-error   {{ background: #FEF2F2; color: #DC2626; }}
+.ip-badge-pending {{ background: #FFF7ED; color: #D97706; }}
+.ip-badge-info    {{ background: #F0FDFA; color: #0F766E; }}
+.ip-badge-trial   {{ background: linear-gradient(135deg, #F0FDFA, #ECFDF5); color: #0F766E; border: 1px solid #CCFBF1; }}
+
+/* --- Stat number + label combo ------------------------------------- */
+.ip-stat {{
+    text-align: center;
+    padding: 0.5rem;
+}}
+.ip-stat-value {{
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: {TEXT_PRIMARY};
+    line-height: 1.2;
+    font-family: {FONT_STACK};
+}}
+.ip-stat-label {{
+    font-size: 0.7rem;
+    color: {TEXT_SECONDARY};
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    font-family: {FONT_STACK};
+}}
+
+/* --- Empty state --------------------------------------------------- */
+.ip-empty-state {{
+    text-align: center;
+    padding: 3rem 2rem;
+    color: {TEXT_TERTIARY};
+    font-family: {FONT_STACK};
+}}
+
+/* --- Action cards (for landing pages) ------------------------------ */
+.ip-action-card {{
+    background: {SURFACE};
+    border: 1px solid {BORDER};
+    border-radius: {RADIUS};
+    padding: 1.25rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-family: {FONT_STACK};
+}}
+.ip-action-card:hover {{
+    border-color: {PRIMARY};
+    box-shadow: {SHADOW_MD};
+    transform: translateY(-2px);
+}}
+.ip-action-card .icon {{
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: {PRIMARY};
+}}
+.ip-action-card .title {{
+    font-weight: 600;
+    color: {TEXT_PRIMARY};
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}}
+.ip-action-card .desc {{
+    font-size: 0.8rem;
+    color: {TEXT_SECONDARY};
+}}
+
+/* --- Trial banner -------------------------------------------------- */
+.ip-trial-banner {{
+    background: linear-gradient(135deg, #F0FDFA 0%, #ECFDF5 100%);
+    border: 1px solid #CCFBF1;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    font-family: {FONT_STACK};
+}}
+.ip-trial-banner .label {{
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: {PRIMARY};
+    margin-bottom: 2px;
+}}
+.ip-trial-banner .days {{
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: {TEXT_PRIMARY};
+}}
+
+</style>
+"""
+
+# ---------------------------------------------------------------------------
+# Dark mode override stylesheet
+# ---------------------------------------------------------------------------
+_DARK_CSS = f"""
+<style>
+/* ====================================================================
+   InsightPilot — Dark Mode Overrides
+   ==================================================================== */
+
+html, body, [data-testid="stApp"] {{
+    background-color: #1A1A1E !important;
+    color: #F5F5F4 !important;
+}}
+
+section[data-testid="stSidebar"] {{
+    background-color: #1F1F23 !important;
+    border-right-color: #2A2A2E !important;
+    box-shadow: 2px 0 16px rgba(0,0,0,0.3), 1px 0 4px rgba(0,0,0,0.2) !important;
+}}
+
+section[data-testid="stSidebar"] .stMarkdown {{
+    color: #F5F5F4 !important;
+}}
+
+h1, h2, h3, h4, h5, h6,
+[data-testid="stHeadingWithActionElements"] {{
+    color: #F5F5F4 !important;
+}}
+
+p, li, label, div:not([data-testid]) {{
+    color: #D6D3D1 !important;
+}}
+
+/* Inputs */
+input[type="text"], input[type="password"], input[type="email"],
+input[type="number"], textarea,
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea {{
+    background-color: #2A2A2E !important;
+    border-color: #3A3A3E !important;
+    color: #F5F5F4 !important;
+}}
+
+/* Metrics */
+[data-testid="stMetric"] {{
+    background-color: #2A2A2E !important;
+    border-color: #3A3A3E !important;
+}}
+
+[data-testid="stMetricValue"] {{
+    color: #F5F5F4 !important;
+}}
+
+[data-testid="stMetricLabel"] {{
+    color: #A8A29E !important;
+}}
+
+/* Buttons — secondary */
+button[data-testid="stBaseButton-secondary"],
+button[kind="secondary"] {{
+    background-color: #2A2A2E !important;
+    color: #F5F5F4 !important;
+    border-color: #3A3A3E !important;
+}}
+
+/* Expanders */
+[data-testid="stExpander"] {{
+    background-color: #2A2A2E !important;
+    border-color: #3A3A3E !important;
+}}
+
+/* Forms */
+[data-testid="stForm"] {{
+    background-color: #2A2A2E !important;
+    border-color: #3A3A3E !important;
+}}
+
+/* Selectboxes */
+[data-testid="stSelectbox"] > div > div {{
+    border-color: #3A3A3E !important;
+}}
+
+/* Tabs */
+button[data-baseweb="tab"] {{
+    color: #A8A29E !important;
+}}
+
+/* Dividers */
+hr {{
+    border-color: #3A3A3E !important;
+}}
+
+/* Cards / utility classes */
+.ip-card {{
+    background: #2A2A2E;
+    border-color: #3A3A3E;
+}}
+.ip-card-hover:hover {{
+    border-color: {PRIMARY};
+}}
+
+.ip-stat-value {{
+    color: #F5F5F4;
+}}
+.ip-stat-label {{
+    color: #A8A29E;
+}}
+
+.ip-action-card {{
+    background: #2A2A2E;
+    border-color: #3A3A3E;
+}}
+.ip-action-card:hover {{
+    border-color: {PRIMARY};
+}}
+.ip-action-card .title {{
+    color: #F5F5F4;
+}}
+.ip-action-card .desc {{
+    color: #A8A29E;
+}}
+
+.ip-trial-banner {{
+    background: linear-gradient(135deg, #1A2A28 0%, #1F2A25 100%);
+    border-color: #2A3A38;
+}}
+.ip-trial-banner .days {{
+    color: #F5F5F4;
+}}
+
+/* Data tables */
+[data-testid="stDataFrame"] {{
+    border-color: #3A3A3E !important;
+}}
+
+/* Captions */
+[data-testid="stCaptionContainer"] {{
+    color: #A8A29E !important;
 }}
 
 </style>

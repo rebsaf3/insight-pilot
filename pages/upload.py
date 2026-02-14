@@ -78,7 +78,7 @@ def show():
                 file_bytes, uploaded_file.name, ws.id, project_id,
             )
 
-            # Create DB record
+            # Create DB record (initially 'pending')
             file_id = queries.create_uploaded_file(
                 project_id=project_id,
                 uploaded_by=user.id,
@@ -88,6 +88,7 @@ def show():
                 file_format=file_format,
                 file_size_bytes=len(file_bytes),
             )
+            queries.update_file_status(file_id, "pending")
 
             # Load and profile
             try:
@@ -101,6 +102,7 @@ def show():
                     column_names=list(df.columns),
                     data_profile=profile,
                 )
+                queries.update_file_status(file_id, "success")
 
                 st.success(f"Uploaded **{uploaded_file.name}** — {profile['row_count']:,} rows, {profile['column_count']} columns")
 
@@ -108,6 +110,7 @@ def show():
                 _show_data_preview(df, profile)
 
             except Exception as e:
+                queries.update_file_status(file_id, "error", str(e))
                 st.error(f"Error processing file: {e}")
 
     # Show preview if file is selected (before upload)
@@ -159,8 +162,19 @@ def _show_data_preview(df, profile):
                 st.caption(f"Sample values: {', '.join(col_info['sample_values'][:5])}")
 
 
+def _status_badge_html(status: str) -> str:
+    """Return an HTML badge for file upload status."""
+    mapping = {
+        "success": ("ip-badge ip-badge-success", "Success"),
+        "error":   ("ip-badge ip-badge-error",   "Error"),
+        "pending": ("ip-badge ip-badge-pending",  "Pending"),
+    }
+    cls, label = mapping.get(status, ("ip-badge ip-badge-info", status.title()))
+    return f"<span class='{cls}'>{label}</span>"
+
+
 def _show_existing_files(project_id):
-    """Show files already uploaded to this project."""
+    """Show files already uploaded to this project with status badges."""
     files = queries.get_files_for_project(project_id)
     if not files:
         st.info("No files uploaded yet. Upload a file above to get started.")
@@ -168,15 +182,30 @@ def _show_existing_files(project_id):
 
     st.subheader("Uploaded Files")
     for f in files:
-        col1, col2, col3 = st.columns([3, 1, 1])
-        with col1:
-            st.markdown(f"**{f.original_filename}**")
-        with col2:
-            if f.row_count is not None:
-                st.caption(f"{f.row_count:,} rows")
-        with col3:
-            size_mb = f.file_size_bytes / (1024 * 1024)
-            st.caption(f"{size_mb:.1f} MB")
+        status = getattr(f, "status", "success")
+        badge = _status_badge_html(status)
+        size_mb = f.file_size_bytes / (1024 * 1024)
+        row_info = f"{f.row_count:,} rows" if f.row_count else ""
+        error_info = ""
+        if getattr(f, "error_message", None):
+            error_info = (
+                f"<div style='font-size:0.72rem;color:#DC2626;margin-top:2px'>"
+                f"{f.error_message}</div>"
+            )
+
+        st.markdown(
+            f"<div class='ip-card' style='padding:0.75rem 1rem;margin-bottom:0.5rem'>"
+            f"<div style='display:flex;align-items:center;gap:0.75rem'>"
+            f"<div style='flex:1'>"
+            f"<div style='font-weight:600;font-size:0.88rem'>{f.original_filename}</div>"
+            f"{error_info}"
+            f"</div>"
+            f"<div style='font-size:0.78rem;color:#57534E'>{row_info}</div>"
+            f"<div style='font-size:0.78rem;color:#A8A29E'>{size_mb:.1f} MB</div>"
+            f"{badge}"
+            f"</div></div>",
+            unsafe_allow_html=True,
+        )
 
 
 show()

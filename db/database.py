@@ -329,6 +329,22 @@ CREATE TABLE IF NOT EXISTS system_settings (
     updated_by      TEXT REFERENCES users(id),
     updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- =========================================================================
+-- User Preferences (per-user settings: theme, notifications)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS user_preferences (
+    id              TEXT PRIMARY KEY,
+    user_id         TEXT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    theme           TEXT NOT NULL DEFAULT 'light',
+    notification_email   INTEGER NOT NULL DEFAULT 1,
+    notification_in_app  INTEGER NOT NULL DEFAULT 1,
+    notification_billing INTEGER NOT NULL DEFAULT 1,
+    notification_product INTEGER NOT NULL DEFAULT 1,
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_up_user ON user_preferences(user_id);
 """
 
 
@@ -370,12 +386,29 @@ def init_db() -> None:
         migrations = [
             "ALTER TABLE projects ADD COLUMN instructions TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE users ADD COLUMN is_superadmin INTEGER NOT NULL DEFAULT 0",
+            # Phase: user name decomposition
+            "ALTER TABLE users ADD COLUMN first_name TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE users ADD COLUMN last_name TEXT NOT NULL DEFAULT ''",
+            # Phase: file upload status tracking
+            "ALTER TABLE uploaded_files ADD COLUMN status TEXT NOT NULL DEFAULT 'success'",
+            "ALTER TABLE uploaded_files ADD COLUMN error_message TEXT DEFAULT NULL",
+            # Phase: 7-day trial
+            "ALTER TABLE workspaces ADD COLUMN trial_ends_at TEXT DEFAULT NULL",
         ]
         for sql in migrations:
             try:
                 conn.execute(sql)
             except Exception:
                 pass  # column already exists
+
+        # Backfill: mark files with no profile as errors
+        try:
+            conn.execute(
+                "UPDATE uploaded_files SET status='error' "
+                "WHERE row_count IS NULL AND data_profile IS NULL AND status='success'"
+            )
+        except Exception:
+            pass
 
 
 def execute_query(sql: str, params: tuple = ()) -> list[sqlite3.Row]:
