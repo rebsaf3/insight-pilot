@@ -5,7 +5,7 @@ import streamlit as st
 from auth.authenticator import authenticate, register_user
 from auth.session import create_user_session, get_current_user
 from services.workspace_service import create_personal_workspace
-from config.settings import APP_TITLE
+from config.settings import APP_TITLE, GOOGLE_CLIENT_ID, MICROSOFT_CLIENT_ID, BASE_URL
 
 
 def show():
@@ -18,6 +18,9 @@ def show():
         "<p style='text-align:center; color:#666; margin-top:0'>AI-powered data analytics</p>",
         unsafe_allow_html=True,
     )
+
+    # SSO buttons (shown if global SSO credentials are configured)
+    _show_sso_buttons()
 
     tab_login, tab_register = st.tabs(["Sign In", "Create Account"])
 
@@ -155,6 +158,29 @@ def _complete_2fa_login(user_id: str):
     st.session_state.pop("pending_2fa_user_id", None)
     st.success("Welcome back!")
     st.rerun()
+
+
+def _show_sso_buttons():
+    """Show SSO login buttons if credentials are configured."""
+    has_google = bool(GOOGLE_CLIENT_ID)
+    has_microsoft = bool(MICROSOFT_CLIENT_ID)
+
+    if not has_google and not has_microsoft:
+        return
+
+    cols = st.columns(2)
+    if has_google:
+        with cols[0]:
+            from services.sso_service import get_google_auth_url
+            url = get_google_auth_url("")
+            st.link_button("Sign in with Google", url, use_container_width=True)
+    if has_microsoft:
+        with cols[1]:
+            from services.sso_service import get_microsoft_auth_url
+            url = get_microsoft_auth_url("")
+            st.link_button("Sign in with Microsoft", url, use_container_width=True)
+
+    st.divider()
 
 
 show()

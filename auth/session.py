@@ -30,6 +30,18 @@ def create_user_session(user: User) -> str:
     return token
 
 
+def create_user_session_headless(user: User) -> str:
+    """Create a session without Streamlit (for SSO callbacks in FastAPI)."""
+    token = _generate_session_token()
+    expires_at = (datetime.now(timezone.utc) + timedelta(days=SESSION_EXPIRY_DAYS)).isoformat()
+    queries.create_session(
+        user_id=user.id,
+        session_token=token,
+        expires_at=expires_at,
+    )
+    return token
+
+
 def get_current_user() -> Optional[User]:
     """Return the current authenticated User, or None."""
     user_id = st.session_state.get("user_id")

@@ -31,6 +31,7 @@ def startup():
 
 # Mount route modules
 from api.routes import projects, files, dashboards, analysis, account, webhooks
+from auth.sso import router as sso_router
 
 app.include_router(projects.router, prefix="/api/v1", tags=["Projects"])
 app.include_router(files.router, prefix="/api/v1", tags=["Files"])
@@ -38,6 +39,7 @@ app.include_router(dashboards.router, prefix="/api/v1", tags=["Dashboards"])
 app.include_router(analysis.router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(account.router, prefix="/api/v1", tags=["Account"])
 app.include_router(webhooks.router, tags=["Webhooks"])
+app.include_router(sso_router, tags=["SSO"])
 
 
 @app.get("/health")

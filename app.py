@@ -47,6 +47,7 @@ def main():
                     st.Page("pages/billing.py", title="Billing", icon=":material/payments:"),
                     st.Page("pages/branding.py", title="Branding", icon=":material/palette:"),
                     st.Page("pages/workspace_settings.py", title="Workspace", icon=":material/group:"),
+                    st.Page("pages/api_settings.py", title="API", icon=":material/api:"),
                     st.Page("pages/settings.py", title="Account", icon=":material/settings:"),
                     st.Page(handle_logout, title="Sign Out", icon=":material/logout:"),
                 ],
