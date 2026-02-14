@@ -632,7 +632,7 @@ def add_credit_entry(workspace_id: str, user_id: str, change_amount: int,
 def get_credit_balance(workspace_id: str) -> int:
     with get_db() as conn:
         row = conn.execute(
-            "SELECT balance_after FROM credit_ledger WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 1",
+            "SELECT balance_after FROM credit_ledger WHERE workspace_id = ? ORDER BY rowid DESC LIMIT 1",
             (workspace_id,),
         ).fetchone()
     return row["balance_after"] if row else 0

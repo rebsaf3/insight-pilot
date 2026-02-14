@@ -121,6 +121,14 @@ def _get_call_name(node: ast.Call) -> Optional[str]:
 # Safe execution environment
 # ---------------------------------------------------------------------------
 
+def _safe_import(name, globals=None, locals=None, fromlist=(), level=0):
+    """A restricted __import__ that only allows whitelisted modules."""
+    base = name.split(".")[0]
+    if base not in ALLOWED_MODULES and name not in ALLOWED_MODULES:
+        raise ImportError(f"Import of '{name}' is not allowed.")
+    return __builtins__["__import__"](name, globals, locals, fromlist, level) if isinstance(__builtins__, dict) else __import__(name, globals, locals, fromlist, level)
+
+
 def create_safe_globals(df: pd.DataFrame) -> dict:
     """Build the restricted globals dict for exec()."""
     import datetime
@@ -137,6 +145,9 @@ def create_safe_globals(df: pd.DataFrame) -> dict:
         k: getattr(__builtins__, k) for k in dir(__builtins__)
         if k not in BLOCKED_BUILTINS and not k.startswith("_")
     }
+
+    # Add a restricted __import__ that only allows whitelisted modules
+    safe_builtins["__import__"] = _safe_import
 
     return {
         "__builtins__": safe_builtins,
