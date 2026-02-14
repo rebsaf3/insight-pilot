@@ -58,9 +58,11 @@ def show():
         st.error(size_msg)
         return
 
+    from config.settings import TIERS
+    tier_config = TIERS.get(ws.tier, TIERS["free"])
     is_valid, err_msg = file_service.validate_upload(
         uploaded_file.name, len(file_bytes),
-        max_size_mb=credit_service.get_usage_summary(ws.id, user.id)["uploads_limit"] or 200,
+        max_size_mb=tier_config["max_file_size_mb"],
     )
     if not is_valid:
         st.error(err_msg)
