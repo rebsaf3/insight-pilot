@@ -22,9 +22,9 @@ def show():
     usage = credit_service.get_usage_summary(ws.id, user.id)
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Current Plan", tier_config["name"])
-    col2.metric("Credits Remaining", usage["credits_remaining"])
-    col3.metric("Uploads Today", f"{usage['uploads_today']}/{usage['uploads_limit'] if usage['uploads_limit'] != -1 else '\u221e'}")
+    col1.metric("Plan", tier_config["name"])
+    col2.metric("Credits", usage["credits_remaining"])
+    col3.metric("Uploads", f"{usage['uploads_today']}/{usage['uploads_limit'] if usage['uploads_limit'] != -1 else '\u221e'}")
     col4.metric("Dashboards", f"{usage['dashboards_count']}/{usage['dashboards_limit'] if usage['dashboards_limit'] != -1 else '\u221e'}")
 
     # Credit usage bar
@@ -130,8 +130,9 @@ def show():
 
             st.markdown(
                 f"<div class='ip-card' style='text-align:center;padding:1.25rem 1rem'>"
-                f"<div style='font-size:1.5rem;color:#0F766E;margin-bottom:0.25rem'>"
-                f":material/{addon_def['icon']}:</div>"
+                f"<div style='margin-bottom:0.25rem'>"
+                f"<span class='material-symbols-rounded' style='font-size:2rem;color:#0F766E'>"
+                f"{addon_def['icon']}</span></div>"
                 f"<div style='font-weight:700;font-size:0.95rem;margin-bottom:0.25rem'>"
                 f"{addon_def['name']} {status_html}</div>"
                 f"<div style='font-size:0.82rem;color:#57534E;margin-bottom:0.5rem'>"
@@ -165,7 +166,7 @@ def show():
             st.markdown(
                 f"<div class='ip-card' style='display:flex;align-items:center;gap:1rem;"
                 f"padding:0.75rem 1rem;margin-bottom:0.5rem'>"
-                f"<div style='font-size:1.25rem'>:material/credit_card:</div>"
+                f"<div><span class='material-symbols-rounded' style='font-size:1.5rem;color:#0F766E'>credit_card</span></div>"
                 f"<div style='flex:1'>"
                 f"<div style='font-weight:600;font-size:0.9rem'>{m['brand']} ending in {m['last4']}</div>"
                 f"<div style='font-size:0.78rem;color:#57534E'>Expires {m['exp_month']:02d}/{m['exp_year']}</div>"

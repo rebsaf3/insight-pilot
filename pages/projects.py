@@ -102,7 +102,8 @@ def show():
     if not projects:
         st.markdown(
             "<div class='ip-empty-state'>"
-            "<div style='font-size:3rem;margin-bottom:0.5rem'>:material/folder_open:</div>"
+            "<div style='margin-bottom:0.5rem'>"
+            "<span class='material-symbols-rounded' style='font-size:3rem;color:#A8A29E'>folder_open</span></div>"
             "<div style='font-size:1.1rem;font-weight:600;color:#1C1917;margin-bottom:0.25rem'>"
             "No projects yet</div>"
             "<div style='font-size:0.88rem'>Create your first project above to get started.</div>"

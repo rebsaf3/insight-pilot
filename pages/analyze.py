@@ -92,7 +92,7 @@ def _show_landing(user, ws, project, files):
     st.markdown(
         f"<div class='ip-card' style='margin-bottom:1.5rem'>"
         f"<div style='display:flex;align-items:center;gap:0.75rem'>"
-        f"<div style='font-size:1.5rem'>:material/folder:</div>"
+        f"<span class='material-symbols-rounded' style='font-size:1.75rem;color:#0F766E'>folder</span>"
         f"<div>"
         f"<div style='font-weight:700;font-size:1rem'>{project.name}</div>"
         f"<div style='font-size:0.82rem;color:#57534E'>"
@@ -110,17 +110,17 @@ def _show_landing(user, ws, project, files):
     # Quick action cards
     st.markdown("<div class='ip-section-header'><h3>Quick Actions</h3></div>", unsafe_allow_html=True)
     actions = [
-        (":material/trending_up:", "Trend Analysis", "Track patterns over time"),
-        (":material/bar_chart:", "Comparison", "Compare categories and groups"),
-        (":material/summarize:", "Summary", "Get a data overview"),
-        (":material/edit:", "Custom Prompt", "Describe exactly what you need"),
+        ("trending_up", "Trend Analysis", "Track patterns over time"),
+        ("bar_chart", "Comparison", "Compare categories and groups"),
+        ("summarize", "Summary", "Get a data overview"),
+        ("edit", "Custom Prompt", "Describe exactly what you need"),
     ]
     action_cols = st.columns(len(actions))
     for col, (icon, title, desc) in zip(action_cols, actions):
         with col:
             st.markdown(
                 f"<div class='ip-action-card'>"
-                f"<div class='icon'>{icon}</div>"
+                f"<div class='icon'><span class='material-symbols-rounded'>{icon}</span></div>"
                 f"<div class='title'>{title}</div>"
                 f"<div class='desc'>{desc}</div>"
                 f"</div>",
