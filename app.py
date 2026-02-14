@@ -27,7 +27,10 @@ def main():
         login_page = st.Page("pages/login.py", title="Sign In", icon=":material/login:")
         nav = st.navigation([login_page], position="hidden")
     else:
-        # Authenticated — full navigation
+        # Authenticated — render sidebar
+        from components.sidebar import render_sidebar
+        render_sidebar(user)
+
         def handle_logout():
             logout()
             st.rerun()

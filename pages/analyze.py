@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from auth.session import require_permission, get_current_project_id, get_current_workspace
+from auth.session import require_permission, get_current_project_id
 from services import file_service, data_profiler, llm_service, code_executor, credit_service
 from db import queries
 

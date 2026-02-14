@@ -5,12 +5,10 @@ import streamlit as st
 from auth.session import require_auth, get_current_workspace, set_current_workspace, set_current_project
 from services.workspace_service import get_user_workspaces
 from db import queries
-from components.sidebar import render_sidebar
 
 
 def show():
     user = require_auth()
-    render_sidebar(user)
 
     # Auto-select workspace if none selected
     ws = get_current_workspace()
