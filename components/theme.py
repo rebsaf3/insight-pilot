@@ -47,6 +47,7 @@ _FONT_LINK = """
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 """
 
 # ---------------------------------------------------------------------------
@@ -79,7 +80,9 @@ h2 {{ font-size: 1.5rem !important; }}
 h3 {{ font-size: 1.25rem !important; }}
 
 /* --- Body text ----------------------------------------------------- */
-p, li, span, label, div {{
+/* NOTE: Do NOT override font-family on <span> globally — it breaks
+   Material Symbols icon rendering (the icon font uses <span> elements). */
+p, li, label, div:not([data-testid]) {{
     font-family: {FONT_STACK} !important;
 }}
 
@@ -287,16 +290,18 @@ hr {{
 }}
 
 /* --- Hide Streamlit branding --------------------------------------- */
-/* NOTE: Do NOT hide <header> — it loads the Material Symbols icon font.
-   Hiding it breaks all :material/ icons in navigation. */
+/* Keep header in the DOM (it loads Material Symbols font) but make it
+   invisible and non-interactive.  Do NOT use height:0/overflow:hidden
+   because browsers skip font loading for collapsed elements. */
 #MainMenu {{visibility: hidden;}}
 footer {{visibility: hidden;}}
 [data-testid="stHeader"] {{
     background: transparent !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}}
+[data-testid="stDecoration"] {{
+    display: none !important;
 }}
 
 /* --- Sidebar content ordering — push custom widgets below nav ------ */

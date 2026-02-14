@@ -163,10 +163,11 @@ a[data-testid="stBaseButton-secondary"]:hover {
 footer {visibility: hidden;}
 [data-testid="stHeader"] {
     background: transparent !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+[data-testid="stDecoration"] {
+    display: none !important;
 }
 </style>
 """
