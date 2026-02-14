@@ -61,8 +61,8 @@ def render_sidebar(user: User) -> None:
         # Upgrade prompt for free tier
         if selected_ws.tier == "free":
             st.markdown(
-                "<div style='background:#EEF0FC;border:1px solid #D4D9F7;border-radius:6px;"
-                "padding:8px 12px;margin-top:4px;font-size:0.8rem;color:#2D3FE0;"
+                "<div style='background:#F0FDFA;border:1px solid #CCFBF1;border-radius:8px;"
+                "padding:8px 12px;margin-top:4px;font-size:0.78rem;color:#0F766E;"
                 "font-family:Inter,sans-serif'>"
                 "&#x2728; Upgrade to <b>Pro</b> for more credits and features."
                 "</div>",
@@ -76,10 +76,10 @@ def render_sidebar(user: User) -> None:
             if project:
                 st.markdown(
                     f"<div style='margin-top:12px;padding:8px 12px;background:#FFFFFF;"
-                    f"border:1px solid #E5E7EB;border-radius:6px;font-family:Inter,sans-serif'>"
-                    f"<div style='font-size:0.7rem;color:#6B7280;text-transform:uppercase;"
-                    f"letter-spacing:0.05em;font-weight:500'>Active Project</div>"
-                    f"<div style='font-weight:600;color:#111827;font-size:0.85rem;"
+                    f"border:1px solid #E7E5E4;border-radius:8px;font-family:Inter,sans-serif'>"
+                    f"<div style='font-size:0.68rem;color:#57534E;text-transform:uppercase;"
+                    f"letter-spacing:0.06em;font-weight:500'>Active Project</div>"
+                    f"<div style='font-weight:600;color:#1C1917;font-size:0.85rem;"
                     f"margin-top:2px'>{project.name}</div>"
                     f"</div>",
                     unsafe_allow_html=True,
@@ -90,9 +90,9 @@ def render_sidebar(user: User) -> None:
         # ----- User identity (bottom of sidebar) -----
         st.markdown(
             f"<div style='font-family:Inter,sans-serif'>"
-            f"<div style='font-weight:600;font-size:0.85rem;color:#111827'>"
+            f"<div style='font-weight:600;font-size:0.85rem;color:#1C1917'>"
             f"{user.display_name}</div>"
-            f"<div style='color:#9CA3AF;font-size:0.75rem'>{user.email}</div>"
+            f"<div style='color:#A8A29E;font-size:0.75rem'>{user.email}</div>"
             f"</div>",
             unsafe_allow_html=True,
         )

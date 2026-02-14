@@ -3,6 +3,9 @@
 Call ``inject_custom_css()`` once at the top of the main app entrypoint to
 apply global styling overrides on top of the Streamlit theme defined in
 ``.streamlit/config.toml``.
+
+Design language: warm, airy, human — soft cream backgrounds, teal/green
+accents, generous whitespace, refined typography, subtle card borders.
 """
 
 import streamlit as st
@@ -10,33 +13,47 @@ import streamlit as st
 # ---------------------------------------------------------------------------
 # Design tokens — derived from joyfulinnovation.com
 # ---------------------------------------------------------------------------
-PRIMARY = "#2D3FE0"          # Royal blue — buttons, links, accents
-PRIMARY_HOVER = "#1E2FC0"    # Darker blue on hover
-PRIMARY_LIGHT = "#EEF0FC"    # Very light blue tint
-SURFACE = "#FFFFFF"          # Card / panel backgrounds
-BG_SECTION = "#F4F6FA"       # Section backgrounds, sidebar
-TEXT_PRIMARY = "#111827"      # Headings, body text
-TEXT_SECONDARY = "#6B7280"   # Captions, muted text
-TEXT_TERTIARY = "#9CA3AF"    # Placeholders, disabled
-BORDER = "#E5E7EB"           # Card borders, dividers
-BORDER_LIGHT = "#F3F4F6"     # Subtle separators
-SUCCESS = "#059669"          # Green accents
-ERROR = "#DC2626"            # Red error states
-RADIUS = "10px"              # Card / button border-radius
-RADIUS_SM = "6px"            # Small elements
-SHADOW_SM = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)"
-SHADOW_MD = "0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04)"
+# Primary brand colors
+PRIMARY = "#0F766E"              # Teal — primary buttons, links, accents
+PRIMARY_HOVER = "#0D6660"        # Darker teal on hover
+PRIMARY_LIGHT = "#F0FDFA"        # Very light teal tint for hover states
+ACCENT = "#10B981"               # Emerald green — highlights, badges
+ACCENT_LIGHT = "#ECFDF5"         # Light green tint
+
+# Backgrounds — warm cream tones, not cold white
+BG_PAGE = "#FAF9F7"              # Warm off-white page background
+BG_SECTION = "#F5F3EF"           # Slightly warmer — sidebar, sections
+BG_WARM = "#FFF8F0"              # Warm cream tint for hero/feature areas
+SURFACE = "#FFFFFF"              # Card / panel backgrounds (true white)
+
+# Text
+TEXT_PRIMARY = "#1C1917"         # Stone-900 — headings, body text
+TEXT_SECONDARY = "#57534E"       # Stone-600 — captions, muted text
+TEXT_TERTIARY = "#A8A29E"        # Stone-400 — placeholders, disabled
+
+# Borders & shadows — warm tones
+BORDER = "#E7E5E4"              # Stone-200 — card borders, dividers
+BORDER_LIGHT = "#F5F5F4"        # Stone-100 — subtle separators
+SHADOW_SM = "0 1px 3px rgba(28,25,23,0.05), 0 1px 2px rgba(28,25,23,0.03)"
+SHADOW_MD = "0 4px 16px rgba(28,25,23,0.06), 0 2px 4px rgba(28,25,23,0.03)"
+SHADOW_LG = "0 8px 30px rgba(28,25,23,0.08), 0 4px 8px rgba(28,25,23,0.04)"
+
+# Semantics
+SUCCESS = "#059669"              # Green
+ERROR = "#DC2626"                # Red
+WARNING = "#D97706"              # Amber
+
+# Radii — generous rounding for warmth
+RADIUS = "12px"                  # Cards, panels
+RADIUS_SM = "8px"                # Buttons, inputs
+RADIUS_XL = "16px"               # Large containers
+
+# Typography
 FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 
 
 def inject_custom_css() -> None:
-    """Inject the full custom CSS stylesheet into the Streamlit app.
-
-    Call once from the entrypoint file (app.py). The <link> tag for Google
-    Fonts is injected separately from the <style> block because @import
-    rules inside dynamically injected <style> elements are unreliable in
-    some browsers.
-    """
+    """Inject the full custom CSS stylesheet into the Streamlit app."""
     st.markdown(_FONT_LINK + _CSS, unsafe_allow_html=True)
 
 
@@ -57,13 +74,20 @@ _CSS = f"""
 <style>
 /* ====================================================================
    InsightPilot — Custom Theme (Joyful Innovation design system)
+   Warm · Airy · Human
    ==================================================================== */
 
 /* --- Root / body --------------------------------------------------- */
 html, body, [data-testid="stApp"] {{
     font-family: {FONT_STACK} !important;
+    background-color: {BG_PAGE} !important;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}}
+
+/* --- Main content area --------------------------------------------- */
+[data-testid="stMainBlockContainer"] {{
+    max-width: 1100px;
 }}
 
 /* --- Headings ------------------------------------------------------ */
@@ -72,12 +96,12 @@ h1, h2, h3, h4, h5, h6,
     font-family: {FONT_STACK} !important;
     color: {TEXT_PRIMARY} !important;
     font-weight: 700 !important;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
 }}
 
-h1 {{ font-size: 2rem !important; }}
-h2 {{ font-size: 1.5rem !important; }}
-h3 {{ font-size: 1.25rem !important; }}
+h1 {{ font-size: 1.75rem !important; }}
+h2 {{ font-size: 1.35rem !important; }}
+h3 {{ font-size: 1.1rem !important; }}
 
 /* --- Body text ----------------------------------------------------- */
 /* NOTE: Do NOT override font-family on <span> globally — it breaks
@@ -107,13 +131,14 @@ button[kind="primary"] {{
     font-family: {FONT_STACK} !important;
     letter-spacing: 0.01em;
     padding: 0.5rem 1.25rem !important;
-    transition: background-color 0.15s ease, box-shadow 0.15s ease !important;
+    transition: all 0.2s ease !important;
 }}
 
 button[data-testid="stBaseButton-primary"]:hover,
 button[kind="primary"]:hover {{
     background-color: {PRIMARY_HOVER} !important;
     box-shadow: {SHADOW_SM} !important;
+    transform: translateY(-1px);
 }}
 
 /* --- Secondary / outline buttons ----------------------------------- */
@@ -125,7 +150,7 @@ button[kind="secondary"] {{
     border-radius: {RADIUS_SM} !important;
     font-weight: 500 !important;
     font-family: {FONT_STACK} !important;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+    transition: all 0.2s ease !important;
 }}
 
 button[data-testid="stBaseButton-secondary"]:hover,
@@ -158,7 +183,8 @@ textarea,
     border: 1px solid {BORDER} !important;
     border-radius: {RADIUS_SM} !important;
     font-family: {FONT_STACK} !important;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+    background-color: {SURFACE} !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }}
 
 input:focus,
@@ -178,16 +204,16 @@ textarea:focus {{
     background-color: {SURFACE} !important;
     border: 1px solid {BORDER} !important;
     border-radius: {RADIUS} !important;
-    padding: 1rem !important;
+    padding: 1rem 1.25rem !important;
     box-shadow: {SHADOW_SM} !important;
 }}
 
 [data-testid="stMetricLabel"] {{
     color: {TEXT_SECONDARY} !important;
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
     font-weight: 500 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
+    letter-spacing: 0.06em !important;
 }}
 
 [data-testid="stMetricValue"] {{
@@ -200,6 +226,7 @@ textarea:focus {{
     border: 1px solid {BORDER} !important;
     border-radius: {RADIUS} !important;
     overflow: hidden;
+    background-color: {SURFACE} !important;
 }}
 
 [data-testid="stExpander"] summary {{
@@ -213,7 +240,7 @@ button[data-baseweb="tab"] {{
     font-weight: 500 !important;
     color: {TEXT_SECONDARY} !important;
     border-bottom: 2px solid transparent !important;
-    transition: color 0.15s ease !important;
+    transition: color 0.2s ease !important;
 }}
 
 button[data-baseweb="tab"][aria-selected="true"] {{
@@ -259,7 +286,8 @@ hr {{
     font-family: {FONT_STACK} !important;
     font-weight: 500 !important;
     border-radius: {RADIUS_SM} !important;
-    transition: background-color 0.15s ease !important;
+    transition: background-color 0.2s ease !important;
+    font-size: 0.875rem !important;
 }}
 
 [data-testid="stSidebarNav"] a:hover {{
@@ -282,6 +310,7 @@ hr {{
     border: 1px solid {BORDER} !important;
     border-radius: {RADIUS} !important;
     padding: 1.5rem !important;
+    background-color: {SURFACE} !important;
 }}
 
 /* --- Toast / success messages -------------------------------------- */
@@ -316,12 +345,23 @@ section[data-testid="stSidebar"] > div:first-child {{
     align-items: center !important;
     gap: 0.5rem !important;
     padding: 0.45rem 0.75rem !important;
-    font-size: 0.9rem !important;
+    font-size: 0.875rem !important;
 }}
 
 [data-testid="stSidebarNav"] li a span[data-testid="stIconMaterial"] {{
-    font-size: 1.2rem !important;
+    font-size: 1.15rem !important;
     line-height: 1 !important;
+}}
+
+/* --- Sidebar nav group headers ------------------------------------- */
+[data-testid="stSidebarNav"] h2 {{
+    font-size: 0.7rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    color: {TEXT_TERTIARY} !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 0.75rem 0.25rem !important;
+    margin: 0 !important;
 }}
 
 </style>

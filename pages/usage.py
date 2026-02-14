@@ -9,15 +9,15 @@ from auth.session import require_auth, get_current_workspace
 from config.settings import CHART_PALETTES
 from db import queries
 
-# Design tokens (match theme.py)
-_COLORS = CHART_PALETTES["default"]  # ["#2D3FE0", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"]
+# Design tokens (match theme.py — warm palette)
+_COLORS = CHART_PALETTES["default"]  # ["#0F766E", "#10B981", "#D97706", "#E11D48", "#7C3AED", "#0EA5E9"]
 _CHART_LAYOUT = dict(
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    xaxis=dict(gridcolor="#F3F4F6"),
-    yaxis=dict(gridcolor="#F3F4F6"),
+    plot_bgcolor="#FFFFFF",
+    paper_bgcolor="#FFFFFF",
+    xaxis=dict(gridcolor="#F5F5F4"),
+    yaxis=dict(gridcolor="#F5F5F4"),
     margin=dict(l=20, r=20, t=30, b=20),
-    font=dict(family="Inter, sans-serif"),
+    font=dict(family="Inter, sans-serif", color="#57534E"),
 )
 
 
@@ -183,7 +183,7 @@ def _render_credit_usage_chart(workspace_id, start_date, end_date, member_id):
     fig.update_layout(**_CHART_LAYOUT, hovermode="x unified")
     fig.update_traces(
         fill="tozeroy",
-        fillcolor="rgba(45, 63, 224, 0.1)",
+        fillcolor="rgba(15, 118, 110, 0.08)",
         line=dict(width=2),
     )
     st.plotly_chart(fig, use_container_width=True)

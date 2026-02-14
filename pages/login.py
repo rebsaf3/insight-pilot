@@ -13,20 +13,14 @@ from config.settings import APP_TITLE, GOOGLE_CLIENT_ID, MICROSOFT_CLIENT_ID, BA
 _LOGIN_CSS = """
 <style>
 /* --- Center the login content in the viewport ---------------------- */
-[data-testid="stMainBlockContainer"] {
-    max-width: 480px !important;
-    margin: 0 auto !important;
-    padding-top: 2rem !important;
+[data-testid="stApp"] {
+    background-color: #FAF9F7 !important;
 }
 
-/* --- Login card wrapper -------------------------------------------- */
-.login-card {
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    padding: 2.5rem 2rem 2rem;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
-    margin-bottom: 1.5rem;
+[data-testid="stMainBlockContainer"] {
+    max-width: 440px !important;
+    margin: 0 auto !important;
+    padding-top: 3rem !important;
 }
 
 /* --- Brand header -------------------------------------------------- */
@@ -37,35 +31,35 @@ _LOGIN_CSS = """
 
 .login-brand h1 {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    font-weight: 800 !important;
-    font-size: 2.2rem !important;
-    color: #111827 !important;
-    letter-spacing: -0.03em;
+    font-weight: 700 !important;
+    font-size: 1.75rem !important;
+    color: #1C1917 !important;
+    letter-spacing: -0.02em;
     margin-bottom: 0.25rem !important;
-    line-height: 1.1 !important;
+    line-height: 1.2 !important;
 }
 
 .login-brand .logo-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 56px;
-    height: 56px;
-    background: linear-gradient(135deg, #2D3FE0 0%, #5B6CF0 100%);
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #0F766E 0%, #10B981 100%);
     border-radius: 14px;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 12px rgba(45, 63, 224, 0.3);
+    box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
 }
 
 .login-brand .logo-icon svg {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
 }
 
 .login-brand p {
     font-family: 'Inter', sans-serif !important;
-    color: #6B7280 !important;
-    font-size: 1rem !important;
+    color: #57534E !important;
+    font-size: 0.95rem !important;
     font-weight: 400 !important;
     margin-top: 0 !important;
 }
@@ -73,14 +67,14 @@ _LOGIN_CSS = """
 /* --- Footer text --------------------------------------------------- */
 .login-footer {
     text-align: center;
-    font-size: 0.8rem;
-    color: #9CA3AF;
+    font-size: 0.78rem;
+    color: #A8A29E;
     margin-top: 1.5rem;
     font-family: 'Inter', sans-serif;
 }
 
 .login-footer a {
-    color: #2D3FE0;
+    color: #0F766E;
     text-decoration: none;
 }
 
@@ -89,27 +83,28 @@ _LOGIN_CSS = """
     border: none !important;
     padding: 0 !important;
     box-shadow: none !important;
+    background: transparent !important;
 }
 
-/* --- Primary button — make it taller and more prominent ------------ */
+/* --- Primary button — teal, warm ----------------------------------- */
 button[type="submit"],
 button[data-testid="stBaseButton-primary"] {
-    background-color: #2D3FE0 !important;
+    background-color: #0F766E !important;
     color: white !important;
     border: none !important;
     border-radius: 8px !important;
     font-weight: 600 !important;
     font-family: 'Inter', sans-serif !important;
-    padding: 0.65rem 1.5rem !important;
-    font-size: 0.95rem !important;
+    padding: 0.6rem 1.5rem !important;
+    font-size: 0.9rem !important;
     transition: all 0.2s ease !important;
     margin-top: 0.5rem !important;
 }
 
 button[type="submit"]:hover,
 button[data-testid="stBaseButton-primary"]:hover {
-    background-color: #1E2FC0 !important;
-    box-shadow: 0 4px 12px rgba(45, 63, 224, 0.3) !important;
+    background-color: #0D6660 !important;
+    box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25) !important;
     transform: translateY(-1px);
 }
 
@@ -117,45 +112,46 @@ button[data-testid="stBaseButton-primary"]:hover {
 button[data-baseweb="tab"] {
     font-family: 'Inter', sans-serif !important;
     font-weight: 500 !important;
-    font-size: 0.95rem !important;
-    color: #6B7280 !important;
+    font-size: 0.9rem !important;
+    color: #57534E !important;
     padding-bottom: 0.75rem !important;
 }
 
 button[data-baseweb="tab"][aria-selected="true"] {
-    color: #2D3FE0 !important;
+    color: #0F766E !important;
     font-weight: 600 !important;
 }
 
 /* --- Input fields -------------------------------------------------- */
 [data-testid="stTextInput"] input {
-    border: 1.5px solid #E5E7EB !important;
+    border: 1.5px solid #E7E5E4 !important;
     border-radius: 8px !important;
-    padding: 0.6rem 0.75rem !important;
+    padding: 0.55rem 0.75rem !important;
     font-family: 'Inter', sans-serif !important;
-    font-size: 0.9rem !important;
+    font-size: 0.88rem !important;
+    background: #FFFFFF !important;
     transition: all 0.2s ease !important;
 }
 
 [data-testid="stTextInput"] input:focus {
-    border-color: #2D3FE0 !important;
-    box-shadow: 0 0 0 3px rgba(45, 63, 224, 0.1) !important;
+    border-color: #0F766E !important;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.08) !important;
 }
 
 /* --- SSO buttons --------------------------------------------------- */
 a[data-testid="stBaseButton-secondary"] {
-    border: 1.5px solid #E5E7EB !important;
+    border: 1.5px solid #E7E5E4 !important;
     border-radius: 8px !important;
     font-family: 'Inter', sans-serif !important;
     font-weight: 500 !important;
-    color: #111827 !important;
-    transition: all 0.15s ease !important;
+    color: #1C1917 !important;
+    transition: all 0.2s ease !important;
 }
 
 a[data-testid="stBaseButton-secondary"]:hover {
-    border-color: #2D3FE0 !important;
-    color: #2D3FE0 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    border-color: #0F766E !important;
+    color: #0F766E !important;
+    box-shadow: 0 2px 8px rgba(28, 25, 23, 0.05) !important;
 }
 
 /* --- Hide Streamlit branding on login ------------------------------ */
@@ -186,11 +182,11 @@ def show():
         f"""
         <div class="login-brand">
             <div class="logo-icon" style="display:inline-flex;align-items:center;
-                justify-content:center;width:56px;height:56px;
-                background:linear-gradient(135deg, #2D3FE0 0%, #5B6CF0 100%);
+                justify-content:center;width:52px;height:52px;
+                background:linear-gradient(135deg, #0F766E 0%, #10B981 100%);
                 border-radius:14px;margin-bottom:1rem;
-                box-shadow:0 4px 12px rgba(45,63,224,0.3)">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                box-shadow:0 4px 12px rgba(15,118,110,0.25)">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
                      xmlns="http://www.w3.org/2000/svg">
                     <path d="M3 3V21H21" stroke="white" stroke-width="2"
                           stroke-linecap="round" stroke-linejoin="round"/>
