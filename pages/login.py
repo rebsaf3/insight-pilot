@@ -7,19 +7,194 @@ from auth.session import create_user_session, get_current_user
 from services.workspace_service import create_personal_workspace
 from config.settings import APP_TITLE, GOOGLE_CLIENT_ID, MICROSOFT_CLIENT_ID, BASE_URL
 
+# ---------------------------------------------------------------------------
+# Page-specific CSS — centered card layout for the login experience
+# ---------------------------------------------------------------------------
+_LOGIN_CSS = """
+<style>
+/* --- Center the login content in the viewport ---------------------- */
+[data-testid="stMainBlockContainer"] {
+    max-width: 480px !important;
+    margin: 0 auto !important;
+    padding-top: 2rem !important;
+}
+
+/* --- Login card wrapper -------------------------------------------- */
+.login-card {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 2.5rem 2rem 2rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+}
+
+/* --- Brand header -------------------------------------------------- */
+.login-brand {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-brand h1 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 2.2rem !important;
+    color: #111827 !important;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.25rem !important;
+    line-height: 1.1 !important;
+}
+
+.login-brand .logo-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #2D3FE0 0%, #5B6CF0 100%);
+    border-radius: 14px;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(45, 63, 224, 0.3);
+}
+
+.login-brand .logo-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.login-brand p {
+    font-family: 'Inter', sans-serif !important;
+    color: #6B7280 !important;
+    font-size: 1rem !important;
+    font-weight: 400 !important;
+    margin-top: 0 !important;
+}
+
+/* --- Footer text --------------------------------------------------- */
+.login-footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #9CA3AF;
+    margin-top: 1.5rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.login-footer a {
+    color: #2D3FE0;
+    text-decoration: none;
+}
+
+/* --- Override form styling for login ------------------------------- */
+[data-testid="stForm"] {
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+/* --- Primary button — make it taller and more prominent ------------ */
+button[type="submit"],
+button[data-testid="stBaseButton-primary"] {
+    background-color: #2D3FE0 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-family: 'Inter', sans-serif !important;
+    padding: 0.65rem 1.5rem !important;
+    font-size: 0.95rem !important;
+    transition: all 0.2s ease !important;
+    margin-top: 0.5rem !important;
+}
+
+button[type="submit"]:hover,
+button[data-testid="stBaseButton-primary"]:hover {
+    background-color: #1E2FC0 !important;
+    box-shadow: 0 4px 12px rgba(45, 63, 224, 0.3) !important;
+    transform: translateY(-1px);
+}
+
+/* --- Tab styling --------------------------------------------------- */
+button[data-baseweb="tab"] {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    color: #6B7280 !important;
+    padding-bottom: 0.75rem !important;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #2D3FE0 !important;
+    font-weight: 600 !important;
+}
+
+/* --- Input fields -------------------------------------------------- */
+[data-testid="stTextInput"] input {
+    border: 1.5px solid #E5E7EB !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 0.75rem !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.9rem !important;
+    transition: all 0.2s ease !important;
+}
+
+[data-testid="stTextInput"] input:focus {
+    border-color: #2D3FE0 !important;
+    box-shadow: 0 0 0 3px rgba(45, 63, 224, 0.1) !important;
+}
+
+/* --- SSO buttons --------------------------------------------------- */
+a[data-testid="stBaseButton-secondary"] {
+    border: 1.5px solid #E5E7EB !important;
+    border-radius: 8px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 500 !important;
+    color: #111827 !important;
+    transition: all 0.15s ease !important;
+}
+
+a[data-testid="stBaseButton-secondary"]:hover {
+    border-color: #2D3FE0 !important;
+    color: #2D3FE0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* --- Hide Streamlit branding on login ------------------------------ */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+"""
+
 
 def show():
     if get_current_user():
         st.switch_page("pages/projects.py")
         return
 
+    # Inject login-specific CSS
+    st.markdown(_LOGIN_CSS, unsafe_allow_html=True)
+
+    # Brand header with icon
     st.markdown(
-        f"<div style='text-align:center;margin:2rem 0 1.5rem'>"
-        f"<h1 style='font-weight:700;color:#111827;letter-spacing:-0.025em;margin-bottom:4px'>"
-        f"{APP_TITLE}</h1>"
-        f"<p style='color:#6B7280;font-size:1.05rem;margin-top:0'>"
-        f"AI-powered data analytics</p>"
-        f"</div>",
+        f"""
+        <div class="login-brand">
+            <div class="logo-icon" style="display:inline-flex;align-items:center;
+                justify-content:center;width:56px;height:56px;
+                background:linear-gradient(135deg, #2D3FE0 0%, #5B6CF0 100%);
+                border-radius:14px;margin-bottom:1rem;
+                box-shadow:0 4px 12px rgba(45,63,224,0.3)">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                     xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3V21H21" stroke="white" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M7 14L11 10L15 13L21 7" stroke="white" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <h1>{APP_TITLE}</h1>
+            <p>AI-powered data analytics</p>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -94,6 +269,12 @@ def show():
             create_user_session(user)
             st.success("Account created! Welcome to InsightPilot.")
             st.rerun()
+
+    # Footer
+    st.markdown(
+        '<div class="login-footer">Secure, private, and powered by AI</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def _show_2fa_form():

@@ -30,9 +30,24 @@ FONT_STACK = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sa
 
 
 def inject_custom_css() -> None:
-    """Inject the full custom CSS stylesheet into the Streamlit app."""
-    st.markdown(_CSS, unsafe_allow_html=True)
+    """Inject the full custom CSS stylesheet into the Streamlit app.
 
+    Call once from the entrypoint file (app.py). The <link> tag for Google
+    Fonts is injected separately from the <style> block because @import
+    rules inside dynamically injected <style> elements are unreliable in
+    some browsers.
+    """
+    st.markdown(_FONT_LINK + _CSS, unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# Google Fonts — loaded via <link> tag (reliable across all browsers)
+# ---------------------------------------------------------------------------
+_FONT_LINK = """
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+"""
 
 # ---------------------------------------------------------------------------
 # Master stylesheet
@@ -42,9 +57,6 @@ _CSS = f"""
 /* ====================================================================
    InsightPilot — Custom Theme (Joyful Innovation design system)
    ==================================================================== */
-
-/* --- Google Font --------------------------------------------------- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 /* --- Root / body --------------------------------------------------- */
 html, body, [data-testid="stApp"] {{
