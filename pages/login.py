@@ -5,77 +5,198 @@ import streamlit as st
 from auth.authenticator import authenticate, register_user
 from auth.session import create_user_session, get_current_user
 from services.workspace_service import create_personal_workspace
-from config.settings import APP_TITLE, GOOGLE_CLIENT_ID, MICROSOFT_CLIENT_ID, BASE_URL
+from config.settings import APP_TITLE, GOOGLE_CLIENT_ID, MICROSOFT_CLIENT_ID
 
 # ---------------------------------------------------------------------------
-# Page-specific CSS — centered card layout for the login experience
+# Page-specific CSS — split-screen marketing + auth panel
 # ---------------------------------------------------------------------------
 _LOGIN_CSS = """
 <style>
-/* --- Center the login content in the viewport ---------------------- */
+/* --- App background ------------------------------------------------ */
 [data-testid="stApp"] {
-    background-color: #FAF9F7 !important;
+    background: #F8EAD6 !important;
 }
 
 [data-testid="stMainBlockContainer"] {
-    max-width: 440px !important;
-    margin: 0 auto !important;
-    padding-top: 3rem !important;
+    max-width: 100% !important;
+    padding: 0 !important;
 }
 
-/* --- Brand header -------------------------------------------------- */
-.login-brand {
-    text-align: center;
-    margin-bottom: 2rem;
+/* --- Split layout (Streamlit columns) ------------------------------ */
+div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlock"] {
+    gap: 0 !important;
+    align-items: stretch !important;
 }
 
-.login-brand h1 {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    font-weight: 700 !important;
-    font-size: 1.75rem !important;
-    color: #1C1917 !important;
-    letter-spacing: -0.02em;
-    margin-bottom: 0.25rem !important;
-    line-height: 1.2 !important;
+div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+    padding: 0 !important;
 }
 
-.login-brand .logo-icon {
+div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child {
+    background: radial-gradient(1200px 600px at 10% 20%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 55%),
+                linear-gradient(180deg, #F8EAD6 0%, #F6E0C3 100%);
+    min-height: 100vh;
+    padding: 76px 80px 56px 80px !important;
+}
+
+div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
+    background: #FFFFFF;
+    min-height: 100vh;
+    border-left: 1px solid rgba(28, 25, 23, 0.06);
+    padding: 76px 64px 56px 64px !important;
+    display: flex;
+    align-items: center;
+}
+
+div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) > div {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+@media (max-width: 920px) {
+    div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child {
+        display: none !important;
+    }
+    div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
+        border-left: none !important;
+        padding: 56px 22px 44px 22px !important;
+        min-height: auto;
+    }
+}
+
+/* --- Left panel ---------------------------------------------------- */
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 26px;
+}
+
+.auth-brand .logo-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
     background: linear-gradient(135deg, #0F766E 0%, #10B981 100%);
-    border-radius: 14px;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(15, 118, 110, 0.18);
 }
 
-.login-brand .logo-icon svg {
-    width: 26px;
-    height: 26px;
+.auth-brand .logo-icon svg {
+    width: 22px;
+    height: 22px;
 }
 
-.login-brand p {
+.auth-brand .brand-name {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
+    font-size: 1.1rem !important;
+    color: #0B2A29 !important;
+}
+
+.auth-hero h1 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em;
+    font-size: 3.0rem !important;
+    line-height: 1.05 !important;
+    color: #0F172A !important;
+    margin: 0 0 14px 0 !important;
+}
+
+.auth-hero p {
     font-family: 'Inter', sans-serif !important;
-    color: #57534E !important;
+    font-size: 1.05rem !important;
+    line-height: 1.6 !important;
+    color: rgba(15, 23, 42, 0.72) !important;
+    margin: 0 0 26px 0 !important;
+    max-width: 52ch;
+}
+
+.auth-feature-list {
+    margin-top: 12px;
+}
+
+.auth-feature {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 14px 0;
+}
+
+.auth-feature .check {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.12);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    flex: 0 0 auto;
+}
+
+.auth-feature .check svg {
+    width: 14px;
+    height: 14px;
+}
+
+.auth-feature .text {
+    font-family: 'Inter', sans-serif !important;
+    color: rgba(15, 23, 42, 0.74) !important;
+    font-size: 0.98rem !important;
+    line-height: 1.45 !important;
+}
+
+.auth-feature .text b {
+    color: rgba(15, 23, 42, 0.92) !important;
+    font-weight: 600 !important;
+}
+
+/* --- Right panel typography --------------------------------------- */
+.auth-right-title h2 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+    font-size: 2.05rem !important;
+    color: #0F172A !important;
+    margin: 0 0 6px 0 !important;
+}
+
+.auth-right-title p {
+    font-family: 'Inter', sans-serif !important;
+    color: rgba(15, 23, 42, 0.62) !important;
+    margin: 0 0 22px 0 !important;
     font-size: 0.95rem !important;
-    font-weight: 400 !important;
-    margin-top: 0 !important;
 }
 
-/* --- Footer text --------------------------------------------------- */
-.login-footer {
-    text-align: center;
-    font-size: 0.78rem;
-    color: #A8A29E;
-    margin-top: 1.5rem;
-    font-family: 'Inter', sans-serif;
+.auth-field-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 10px 0 6px 0;
 }
 
-.login-footer a {
-    color: #0F766E;
-    text-decoration: none;
+.auth-label {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    color: rgba(15, 23, 42, 0.78) !important;
+}
+
+.auth-link {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    color: #0F766E !important;
+    text-decoration: none !important;
+}
+
+.auth-link:hover {
+    text-decoration: underline !important;
 }
 
 /* --- Override form styling for login ------------------------------- */
@@ -95,10 +216,10 @@ button[data-testid="stBaseButton-primary"] {
     border-radius: 8px !important;
     font-weight: 600 !important;
     font-family: 'Inter', sans-serif !important;
-    padding: 0.6rem 1.5rem !important;
-    font-size: 0.9rem !important;
+    padding: 0.72rem 1.5rem !important;
+    font-size: 0.95rem !important;
     transition: all 0.2s ease !important;
-    margin-top: 0.5rem !important;
+    margin-top: 0.75rem !important;
 }
 
 button[type="submit"]:hover,
@@ -106,20 +227,6 @@ button[data-testid="stBaseButton-primary"]:hover {
     background-color: #0D6660 !important;
     box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25) !important;
     transform: translateY(-1px);
-}
-
-/* --- Tab styling --------------------------------------------------- */
-button[data-baseweb="tab"] {
-    font-family: 'Inter', sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 0.9rem !important;
-    color: #57534E !important;
-    padding-bottom: 0.75rem !important;
-}
-
-button[data-baseweb="tab"][aria-selected="true"] {
-    color: #0F766E !important;
-    font-weight: 600 !important;
 }
 
 /* --- Input fields -------------------------------------------------- */
@@ -138,6 +245,17 @@ button[data-baseweb="tab"][aria-selected="true"] {
     box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.08) !important;
 }
 
+/* --- Checkbox alignment ------------------------------------------- */
+[data-testid="stCheckbox"] {
+    margin-top: 6px;
+}
+
+[data-testid="stCheckbox"] label {
+    font-family: 'Inter', sans-serif !important;
+    color: rgba(15, 23, 42, 0.72) !important;
+    font-size: 0.88rem !important;
+}
+
 /* --- SSO buttons --------------------------------------------------- */
 a[data-testid="stBaseButton-secondary"] {
     border: 1.5px solid #E7E5E4 !important;
@@ -152,6 +270,15 @@ a[data-testid="stBaseButton-secondary"]:hover {
     border-color: #0F766E !important;
     color: #0F766E !important;
     box-shadow: 0 2px 8px rgba(28, 25, 23, 0.05) !important;
+}
+
+/* --- Bottom helper text ------------------------------------------- */
+.auth-bottom {
+    margin-top: 18px;
+    text-align: center;
+    font-family: 'Inter', sans-serif !important;
+    color: rgba(15, 23, 42, 0.60) !important;
+    font-size: 0.9rem !important;
 }
 
 /* --- Hide Streamlit branding on login ------------------------------ */
@@ -177,109 +304,226 @@ def show():
     # Inject login-specific CSS
     st.markdown(_LOGIN_CSS, unsafe_allow_html=True)
 
-    # Brand header with icon
-    st.markdown(
-        f"""
-        <div class="login-brand">
-            <div class="logo-icon" style="display:inline-flex;align-items:center;
-                justify-content:center;width:52px;height:52px;
-                background:linear-gradient(135deg, #0F766E 0%, #10B981 100%);
-                border-radius:14px;margin-bottom:1rem;
-                box-shadow:0 4px 12px rgba(15,118,110,0.25)">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 3V21H21" stroke="white" stroke-width="2"
-                          stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M7 14L11 10L15 13L21 7" stroke="white" stroke-width="2"
-                          stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+    try:
+        view = st.query_params.get("view", "login")
+    except Exception:
+        params = st.experimental_get_query_params()
+        view = params.get("view", ["login"])
+    if isinstance(view, list):
+        view = view[0] if view else "login"
+    if view not in {"login", "register", "forgot"}:
+        view = "login"
+
+    left, right = st.columns([1.65, 1.0], gap="large")
+
+    with left:
+        st.markdown(
+            f"""
+            <div class="auth-brand">
+                <div class="logo-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                         xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 3V21H21" stroke="white" stroke-width="2"
+                              stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 14L11 10L15 13L21 7" stroke="white" stroke-width="2"
+                              stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="brand-name">{APP_TITLE}</div>
             </div>
-            <h1>{APP_TITLE}</h1>
-            <p>AI-powered data analytics</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
-    # SSO buttons (shown if global SSO credentials are configured)
-    _show_sso_buttons()
+            <div class="auth-hero">
+                <h1>Deploy AI copilots<br/>that actually work</h1>
+                <p>
+                    Give your team a secure, managed analytics workspace — with
+                    guardrails, saved dashboards, and shareable insights.
+                </p>
+            </div>
 
-    tab_login, tab_register = st.tabs(["Sign In", "Create Account"])
+            <div class="auth-feature-list">
+                <div class="auth-feature">
+                    <div class="check">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="text"><b>Knowledge you control</b> — workspaces, projects, and datasets stay organized.</div>
+                </div>
+                <div class="auth-feature">
+                    <div class="check">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="text"><b>Guardrails by default</b> — safer analysis with clear limits and traceability.</div>
+                </div>
+                <div class="auth-feature">
+                    <div class="check">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="text"><b>Audit-friendly</b> — keep results, revisions, and exports in one place.</div>
+                </div>
+                <div class="auth-feature">
+                    <div class="check">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="text"><b>Embeddable insights</b> — share results with your team in seconds.</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    # ----- Login Tab -----
-    with tab_login:
-        with st.form("login_form"):
-            email = st.text_input("Email", placeholder="you@company.com")
-            password = st.text_input("Password", type="password")
-            submitted = st.form_submit_button("Sign In", use_container_width=True)
+    with right:
+        st.markdown(
+            f"""
+            <div class="auth-right-title">
+                <h2>{'Welcome Back' if view != 'register' else 'Create Account'}</h2>
+                <p>{'Sign in to your ' + APP_TITLE + ' account' if view != 'register' else 'Create your ' + APP_TITLE + ' account'}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-        if submitted:
-            if not email or not password:
-                st.error("Please enter both email and password.")
-                return
+        # ----- 2FA verification (shown if pending) -----
+        if "pending_2fa_user_id" in st.session_state:
+            _show_2fa_form()
+            return
 
-            success, user, error = authenticate(email, password)
-            if not success:
-                st.error(error)
-                return
+        if view == "forgot":
+            st.info("Password resets are handled by your workspace admin. If you need help, contact support.")
+            st.markdown('<div class="auth-bottom"><a class="auth-link" href="?view=login">Back to sign in</a></div>', unsafe_allow_html=True)
+            return
 
-            # Check if 2FA is required
-            if user.has_2fa:
-                st.session_state["pending_2fa_user_id"] = user.id
+        if view == "login":
+            # SSO buttons (shown if global SSO credentials are configured)
+            _show_sso_buttons()
+
+            remembered_email = st.session_state.get("remembered_email", "")
+            with st.form("login_form"):
+                st.markdown('<div class="auth-field-row"><span class="auth-label">Email</span></div>', unsafe_allow_html=True)
+                email = st.text_input(
+                    "Email",
+                    label_visibility="collapsed",
+                    placeholder="you@example.com",
+                    value=remembered_email,
+                )
+
+                st.markdown(
+                    '<div class="auth-field-row"><span class="auth-label">Password</span><a class="auth-link" href="?view=forgot">Forgot password?</a></div>',
+                    unsafe_allow_html=True,
+                )
+                password = st.text_input(
+                    "Password",
+                    label_visibility="collapsed",
+                    type="password",
+                    placeholder="Enter your password",
+                )
+
+                remember = st.checkbox("Remember my username", value=bool(remembered_email))
+                submitted = st.form_submit_button("Sign In", use_container_width=True)
+
+            if submitted:
+                if not email or not password:
+                    st.error("Please enter both email and password.")
+                    return
+
+                if remember:
+                    st.session_state["remembered_email"] = email
+                else:
+                    st.session_state.pop("remembered_email", None)
+
+                success, user, error = authenticate(email, password)
+                if not success:
+                    st.error(error)
+                    return
+
+                # Check if 2FA is required
+                if user.has_2fa:
+                    st.session_state["pending_2fa_user_id"] = user.id
+                    st.rerun()
+                    return
+
+                # No 2FA — create session directly
+                create_user_session(user)
+                st.success("Welcome back!")
                 st.rerun()
-                return
 
-            # No 2FA — create session directly
-            create_user_session(user)
-            st.success("Welcome back!")
-            st.rerun()
+            st.markdown(
+                '<div class="auth-bottom">Don\'t have an account? <a class="auth-link" href="?view=register">Create one</a></div>',
+                unsafe_allow_html=True,
+            )
 
-    # ----- 2FA verification (shown if pending) -----
-    if "pending_2fa_user_id" in st.session_state:
-        _show_2fa_form()
-        return
+        if view == "register":
+            with st.form("register_form"):
+                st.markdown('<div class="auth-field-row"><span class="auth-label">Display Name</span></div>', unsafe_allow_html=True)
+                reg_name = st.text_input("Display Name", label_visibility="collapsed", placeholder="Jane Doe")
 
-    # ----- Register Tab -----
-    with tab_register:
-        with st.form("register_form"):
-            reg_name = st.text_input("Display Name", placeholder="Jane Doe")
-            reg_email = st.text_input("Email", placeholder="you@company.com", key="reg_email")
-            reg_password = st.text_input("Password", type="password", key="reg_password",
-                                          help="Minimum 8 characters")
-            reg_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm")
-            reg_submitted = st.form_submit_button("Create Account", use_container_width=True)
+                st.markdown('<div class="auth-field-row"><span class="auth-label">Email</span></div>', unsafe_allow_html=True)
+                reg_email = st.text_input(
+                    "Email",
+                    label_visibility="collapsed",
+                    placeholder="you@example.com",
+                    key="reg_email",
+                )
 
-        if reg_submitted:
-            if not reg_name or not reg_email or not reg_password:
-                st.error("All fields are required.")
-                return
-            if reg_password != reg_confirm:
-                st.error("Passwords do not match.")
-                return
+                st.markdown('<div class="auth-field-row"><span class="auth-label">Password</span></div>', unsafe_allow_html=True)
+                reg_password = st.text_input(
+                    "Password",
+                    label_visibility="collapsed",
+                    type="password",
+                    key="reg_password",
+                    placeholder="Minimum 8 characters",
+                )
 
-            success, result = register_user(reg_email, reg_password, reg_name)
-            if not success:
-                st.error(result)
-                return
+                st.markdown('<div class="auth-field-row"><span class="auth-label">Confirm Password</span></div>', unsafe_allow_html=True)
+                reg_confirm = st.text_input(
+                    "Confirm Password",
+                    label_visibility="collapsed",
+                    type="password",
+                    key="reg_confirm",
+                )
 
-            user_id = result
-            # Create personal workspace and start 7-day Pro trial
-            ws_id = create_personal_workspace(user_id, reg_name)
-            from services.workspace_service import start_trial
-            start_trial(ws_id, user_id)
+                reg_submitted = st.form_submit_button("Create Account", use_container_width=True)
 
-            # Auto-login
-            from db.queries import get_user_by_id
-            user = get_user_by_id(user_id)
-            create_user_session(user)
-            st.success("Account created! Your 7-day Pro trial has started.")
-            st.rerun()
+            if reg_submitted:
+                if not reg_name or not reg_email or not reg_password:
+                    st.error("All fields are required.")
+                    return
+                if reg_password != reg_confirm:
+                    st.error("Passwords do not match.")
+                    return
 
-    # Footer
-    st.markdown(
-        '<div class="login-footer">Secure, private, and powered by AI</div>',
-        unsafe_allow_html=True,
-    )
+                success, result = register_user(reg_email, reg_password, reg_name)
+                if not success:
+                    st.error(result)
+                    return
+
+                user_id = result
+                # Create personal workspace and start 7-day Pro trial
+                ws_id = create_personal_workspace(user_id, reg_name)
+                from services.workspace_service import start_trial
+                start_trial(ws_id, user_id)
+
+                # Auto-login
+                from db.queries import get_user_by_id
+                user = get_user_by_id(user_id)
+                create_user_session(user)
+                st.success("Account created! Your 7-day Pro trial has started.")
+                st.rerun()
+
+            st.markdown(
+                '<div class="auth-bottom">Already have an account? <a class="auth-link" href="?view=login">Sign in</a></div>',
+                unsafe_allow_html=True,
+            )
 
 
 def _show_2fa_form():
