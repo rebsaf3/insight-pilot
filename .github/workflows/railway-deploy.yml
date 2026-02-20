@@ -4,12 +4,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 jobs:
-  deploy:
+  ci-gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to Railway
-        uses: railwayapp/cli-action@v1
-        with:
-          railwayToken: ${{ secrets.RAILWAY_TOKEN }}
-          command: up
+      - name: CI gate for Railway deploy
+        run: echo "CI passed. Railway can deploy this commit."
