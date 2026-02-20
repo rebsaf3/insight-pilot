@@ -5,7 +5,7 @@ import streamlit as st
 from auth.authenticator import authenticate, register_user
 from auth.session import create_user_session, get_current_user
 from services.workspace_service import create_personal_workspace
-from config.settings import APP_TITLE, GOOGLE_CLIENT_ID, MICROSOFT_CLIENT_ID
+from config.settings import GOOGLE_CLIENT_ID, MICROSOFT_CLIENT_ID
 
 # ---------------------------------------------------------------------------
 # Page-specific CSS — split-screen marketing + auth panel
@@ -14,7 +14,7 @@ _LOGIN_CSS = """
 <style>
 /* --- App background ------------------------------------------------ */
 [data-testid="stApp"] {
-    background: #F8EAD6 !important;
+    background: #F2E5D3 !important;
 }
 
 [data-testid="stMainBlockContainer"] {
@@ -34,13 +34,13 @@ div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlo
 
 div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:first-child {
     background: radial-gradient(1200px 600px at 10% 20%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 55%),
-                linear-gradient(180deg, #F8EAD6 0%, #F6E0C3 100%);
+                linear-gradient(180deg, #F3E5D0 0%, #EEDCC2 100%);
     min-height: 100vh;
     padding: 76px 80px 56px 80px !important;
 }
 
 div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
-    background: #FFFFFF;
+    background: #FAFCFF;
     min-height: 100vh;
     border-left: 1px solid rgba(28, 25, 23, 0.06);
     padding: 76px 64px 56px 64px !important;
@@ -66,6 +66,11 @@ div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlo
 }
 
 /* --- Left panel ---------------------------------------------------- */
+.auth-left-wrap {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
 .auth-brand {
     display: flex;
     align-items: center;
@@ -101,10 +106,10 @@ div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlo
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     font-weight: 800 !important;
     letter-spacing: -0.03em;
-    font-size: 3.0rem !important;
+    font-size: 3.25rem !important;
     line-height: 1.05 !important;
     color: #0F172A !important;
-    margin: 0 0 14px 0 !important;
+    margin: 0 0 18px 0 !important;
 }
 
 .auth-hero p {
@@ -112,7 +117,7 @@ div[data-testid="stMainBlockContainer"] > div > div[data-testid="stHorizontalBlo
     font-size: 1.05rem !important;
     line-height: 1.6 !important;
     color: rgba(15, 23, 42, 0.72) !important;
-    margin: 0 0 26px 0 !important;
+    margin: 0 0 30px 0 !important;
     max-width: 52ch;
 }
 
@@ -314,68 +319,70 @@ def show():
     if view not in {"login", "register", "forgot"}:
         view = "login"
 
-    left, right = st.columns([1.65, 1.0], gap="large")
+    left, right = st.columns([1.72, 1.0], gap="large")
 
     with left:
         st.markdown(
             f"""
-            <div class="auth-brand">
-                <div class="logo-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                         xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 3V21H21" stroke="white" stroke-width="2"
-                              stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M7 14L11 10L15 13L21 7" stroke="white" stroke-width="2"
-                              stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+            <div class="auth-left-wrap">
+                <div class="auth-brand">
+                    <div class="logo-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 3V21H21" stroke="white" stroke-width="2"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M7 14L11 10L15 13L21 7" stroke="white" stroke-width="2"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="brand-name">NyLi Insights</div>
                 </div>
-                <div class="brand-name">{APP_TITLE}</div>
-            </div>
 
-            <div class="auth-hero">
-                <h1>Deploy AI copilots<br/>that actually work</h1>
-                <p>
-                    Give your team a secure, managed analytics workspace — with
-                    guardrails, saved dashboards, and shareable insights.
-                </p>
-            </div>
+                <div class="auth-hero">
+                    <h1>Deploy AI Insights<br/>That Drive Action</h1>
+                    <p>
+                        NyLi Insights gives your organization a secure analytics workspace
+                        with live dashboards, governed AI analysis, and publish-ready reporting.
+                    </p>
+                </div>
 
-            <div class="auth-feature-list">
-                <div class="auth-feature">
-                    <div class="check">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
-                                  stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                <div class="auth-feature-list">
+                    <div class="auth-feature">
+                        <div class="check">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="text"><b>Portfolio intelligence in one place</b> — unify market data, KPI trends, and analyst context across teams.</div>
                     </div>
-                    <div class="text"><b>Knowledge you control</b> — workspaces, projects, and datasets stay organized.</div>
-                </div>
-                <div class="auth-feature">
-                    <div class="check">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
-                                  stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                    <div class="auth-feature">
+                        <div class="check">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="text"><b>Trusted AI analysis</b> — responses stay grounded in your approved datasets, reports, and prompts.</div>
                     </div>
-                    <div class="text"><b>Guardrails by default</b> — safer analysis with clear limits and traceability.</div>
-                </div>
-                <div class="auth-feature">
-                    <div class="check">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
-                                  stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                    <div class="auth-feature">
+                        <div class="check">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="text"><b>Audit-ready workflows</b> — capture revisions, assumptions, and exports for compliance and review.</div>
                     </div>
-                    <div class="text"><b>Audit-friendly</b> — keep results, revisions, and exports in one place.</div>
-                </div>
-                <div class="auth-feature">
-                    <div class="check">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
-                                  stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                    <div class="auth-feature">
+                        <div class="check">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="text"><b>Executive-ready delivery</b> — publish dashboards and insight briefs to stakeholders in minutes.</div>
                     </div>
-                    <div class="text"><b>Embeddable insights</b> — share results with your team in seconds.</div>
                 </div>
             </div>
             """,
@@ -387,7 +394,7 @@ def show():
             f"""
             <div class="auth-right-title">
                 <h2>{'Welcome Back' if view != 'register' else 'Create Account'}</h2>
-                <p>{'Sign in to your ' + APP_TITLE + ' account' if view != 'register' else 'Create your ' + APP_TITLE + ' account'}</p>
+                <p>{'Sign in to your NyLi Insights account' if view != 'register' else 'Create your NyLi Insights account'}</p>
             </div>
             """,
             unsafe_allow_html=True,
