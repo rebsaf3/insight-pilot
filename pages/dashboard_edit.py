@@ -21,12 +21,34 @@ def show():
         st.error("Dashboard not found.")
         st.stop()
 
+    style = dashboard.style_config or {}
+    current_cols = int(style.get("columns", 2))
+    current_compact = bool(style.get("compact_mode", False))
+    current_show_prompt = bool(style.get("show_prompt", True))
+
     # Dashboard details
     with st.form("edit_dashboard"):
         new_name = st.text_input("Dashboard Name", value=dashboard.name)
         new_desc = st.text_area("Description", value=dashboard.description)
+        col_a, col_b, col_c = st.columns(3)
+        with col_a:
+            columns = st.selectbox("Grid Columns", [1, 2, 3], index=[1, 2, 3].index(current_cols) if current_cols in [1, 2, 3] else 1)
+        with col_b:
+            compact_mode = st.toggle("Compact Cards", value=current_compact)
+        with col_c:
+            show_prompt = st.toggle("Show Prompt Captions", value=current_show_prompt)
+
         if st.form_submit_button("Update"):
-            queries.update_dashboard(dashboard_id, name=new_name, description=new_desc)
+            queries.update_dashboard(
+                dashboard_id,
+                name=new_name,
+                description=new_desc,
+                style_config={
+                    "columns": columns,
+                    "compact_mode": compact_mode,
+                    "show_prompt": show_prompt,
+                },
+            )
             st.success("Dashboard updated!")
             st.rerun()
 

@@ -336,6 +336,36 @@ class UserPreferences:
                 setattr(self, attr, bool(val))
 
 
+@dataclass
+class ScheduledReport:
+    id: str
+    workspace_id: str
+    dashboard_id: str
+    created_by: str
+    name: str
+    recipient_emails: list[str]
+    frequency: str
+    send_time_utc: str
+    day_of_week: Optional[int] = None
+    day_of_month: Optional[int] = None
+    include_pdf: bool = True
+    include_excel: bool = True
+    active: bool = True
+    last_sent_at: Optional[str] = None
+    next_run_at: str = ""
+    last_error: Optional[str] = None
+    created_at: str = ""
+    updated_at: str = ""
+
+    def __post_init__(self):
+        if isinstance(self.recipient_emails, str):
+            self.recipient_emails = json.loads(self.recipient_emails) if self.recipient_emails else []
+        for attr in ("include_pdf", "include_excel", "active"):
+            val = getattr(self, attr)
+            if isinstance(val, int):
+                setattr(self, attr, bool(val))
+
+
 # ---------------------------------------------------------------------------
 # Helper to convert sqlite3.Row to a model dataclass
 # ---------------------------------------------------------------------------

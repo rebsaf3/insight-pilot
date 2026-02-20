@@ -2,6 +2,7 @@
 Run with: streamlit run app.py
 """
 
+import time
 import streamlit as st
 
 from config.settings import APP_TITLE, STORAGE_DIR, UPLOADS_DIR, LOGOS_DIR, EXPORTS_DIR
@@ -46,6 +47,21 @@ def _check_trial_expiry() -> None:
         pass
 
 
+def _maybe_process_scheduled_reports() -> None:
+    """Process due schedules at most once every 10 minutes per session."""
+    if "_last_scheduled_report_tick" not in st.session_state:
+        st.session_state["_last_scheduled_report_tick"] = 0.0
+    now = time.time()
+    if now - st.session_state["_last_scheduled_report_tick"] < 600:
+        return
+    st.session_state["_last_scheduled_report_tick"] = now
+    try:
+        from services.report_scheduler_service import run_due_reports
+        run_due_reports(limit=5)
+    except Exception:
+        pass
+
+
 def main():
     st.set_page_config(
         page_title=APP_TITLE,
@@ -76,6 +92,7 @@ def main():
     # Auto-downgrade expired trials (guarded — never blocks navigation)
     if user:
         _check_trial_expiry()
+        _maybe_process_scheduled_reports()
 
     if user is None:
         # Unauthenticated — only show login
@@ -103,6 +120,7 @@ def main():
             "Dashboards": [
                 st.Page("pages/dashboard_view.py", title="View Dashboard", icon=":material/dashboard:"),
                 st.Page("pages/dashboard_edit.py", title="Edit Dashboard", icon=":material/edit:"),
+                st.Page("pages/scheduled_reports.py", title="Scheduled Reports", icon=":material/schedule_send:"),
             ],
             "Settings": [
                 st.Page("pages/billing.py", title="Billing", icon=":material/payments:"),

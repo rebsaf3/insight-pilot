@@ -245,6 +245,34 @@ CREATE TABLE IF NOT EXISTS workspace_branding (
 );
 
 -- =========================================================================
+-- Scheduled Reports
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS scheduled_reports (
+    id              TEXT PRIMARY KEY,
+    workspace_id    TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    dashboard_id    TEXT NOT NULL REFERENCES dashboards(id) ON DELETE CASCADE,
+    created_by      TEXT NOT NULL REFERENCES users(id),
+    name            TEXT NOT NULL,
+    recipient_emails TEXT NOT NULL DEFAULT '[]',
+    frequency       TEXT NOT NULL DEFAULT 'weekly',
+    send_time_utc   TEXT NOT NULL DEFAULT '09:00',
+    day_of_week     INTEGER DEFAULT NULL,
+    day_of_month    INTEGER DEFAULT NULL,
+    include_pdf     INTEGER NOT NULL DEFAULT 1,
+    include_excel   INTEGER NOT NULL DEFAULT 1,
+    active          INTEGER NOT NULL DEFAULT 1,
+    last_sent_at    TEXT DEFAULT NULL,
+    next_run_at     TEXT NOT NULL,
+    last_error      TEXT DEFAULT NULL,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_sr_workspace ON scheduled_reports(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_sr_next_run ON scheduled_reports(next_run_at);
+CREATE INDEX IF NOT EXISTS idx_sr_dashboard ON scheduled_reports(dashboard_id);
+
+-- =========================================================================
 -- API
 -- =========================================================================
 

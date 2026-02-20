@@ -1,7 +1,10 @@
 """Export service — PDF and PNG export of dashboards and charts."""
 
 from typing import Optional
+import io
+import re
 
+import pandas as pd
 import plotly.io as pio
 import plotly.graph_objects as go
 
@@ -79,3 +82,62 @@ def export_dashboard_as_images(dashboard, charts: list) -> list[tuple[str, bytes
         except Exception:
             continue
     return results
+
+
+def _safe_sheet_name(name: str) -> str:
+    clean = re.sub(r"[\[\]\*\?\/\\:]", "_", (name or "Chart"))
+    return clean[:31] or "Chart"
+
+
+def export_dashboard_as_excel(dashboard, charts: list) -> bytes:
+    """Export dashboard chart data to a multi-sheet XLSX workbook."""
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        meta = pd.DataFrame(
+            [
+                {"Field": "Dashboard", "Value": dashboard.name},
+                {"Field": "Description", "Value": dashboard.description or ""},
+                {"Field": "Generated At", "Value": dashboard.updated_at},
+                {"Field": "Chart Count", "Value": len(charts)},
+            ]
+        )
+        meta.to_excel(writer, sheet_name="Summary", index=False)
+
+        for i, chart in enumerate(charts, start=1):
+            if not chart.plotly_json:
+                continue
+            sheet = _safe_sheet_name(f"{i}_{chart.title}")
+            fig = pio.from_json(chart.plotly_json)
+            traces = fig.to_dict().get("data", [])
+
+            rows = []
+            for trace_idx, trace in enumerate(traces, start=1):
+                list_keys = []
+                max_len = 0
+                for k, v in trace.items():
+                    if isinstance(v, (list, tuple)):
+                        list_keys.append(k)
+                        max_len = max(max_len, len(v))
+                if max_len == 0:
+                    rows.append(
+                        {
+                            "trace_index": trace_idx,
+                            "trace_name": trace.get("name", f"Trace {trace_idx}"),
+                            "trace_type": trace.get("type", ""),
+                        }
+                    )
+                    continue
+                for row_idx in range(max_len):
+                    row = {
+                        "trace_index": trace_idx,
+                        "trace_name": trace.get("name", f"Trace {trace_idx}"),
+                        "trace_type": trace.get("type", ""),
+                    }
+                    for k in list_keys:
+                        vals = trace.get(k, [])
+                        row[k] = vals[row_idx] if row_idx < len(vals) else None
+                    rows.append(row)
+            if not rows:
+                rows = [{"note": "No plottable trace points found for this chart."}]
+            pd.DataFrame(rows).to_excel(writer, sheet_name=sheet, index=False)
+    return output.getvalue()

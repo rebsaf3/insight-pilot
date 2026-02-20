@@ -11,7 +11,7 @@ from db.models import (
     Project, UploadedFile, Dashboard, Chart, CreditLedgerEntry,
     Subscription, CreditPurchase, AddOn, WorkspaceBranding, ApiKey,
     PromptHistoryEntry, PromptTemplate, AuditLogEntry, SystemSetting,
-    UserPreferences,
+    UserPreferences, ScheduledReport,
     row_to_model, rows_to_models,
 )
 
@@ -613,6 +613,127 @@ def reorder_charts(dashboard_id: str, chart_id_order: list[str]) -> bool:
                 "UPDATE charts SET position_index = ?, updated_at = datetime('now') WHERE id = ? AND dashboard_id = ?",
                 (idx, cid, dashboard_id),
             )
+    return True
+
+
+# =========================================================================
+# Scheduled Reports
+# =========================================================================
+
+def create_scheduled_report(
+    workspace_id: str,
+    dashboard_id: str,
+    created_by: str,
+    name: str,
+    recipient_emails: list[str],
+    frequency: str,
+    send_time_utc: str,
+    next_run_at: str,
+    day_of_week: int = None,
+    day_of_month: int = None,
+    include_pdf: bool = True,
+    include_excel: bool = True,
+    active: bool = True,
+) -> str:
+    rid = _new_id()
+    with get_db() as conn:
+        conn.execute(
+            """INSERT INTO scheduled_reports
+               (id, workspace_id, dashboard_id, created_by, name, recipient_emails,
+                frequency, send_time_utc, day_of_week, day_of_month,
+                include_pdf, include_excel, active, next_run_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                rid, workspace_id, dashboard_id, created_by, name,
+                json.dumps(recipient_emails), frequency, send_time_utc,
+                day_of_week, day_of_month,
+                1 if include_pdf else 0,
+                1 if include_excel else 0,
+                1 if active else 0,
+                next_run_at,
+            ),
+        )
+    return rid
+
+
+def get_scheduled_report_by_id(report_id: str) -> Optional[ScheduledReport]:
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM scheduled_reports WHERE id = ?", (report_id,)).fetchone()
+    return row_to_model(row, ScheduledReport)
+
+
+def get_scheduled_reports_for_workspace(workspace_id: str) -> list[ScheduledReport]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM scheduled_reports WHERE workspace_id = ? ORDER BY created_at DESC",
+            (workspace_id,),
+        ).fetchall()
+    return rows_to_models(rows, ScheduledReport)
+
+
+def get_due_scheduled_reports(now_utc: str, limit: int = 20) -> list[ScheduledReport]:
+    with get_db() as conn:
+        rows = conn.execute(
+            """SELECT * FROM scheduled_reports
+               WHERE active = 1 AND next_run_at <= ?
+               ORDER BY next_run_at ASC LIMIT ?""",
+            (now_utc, limit),
+        ).fetchall()
+    return rows_to_models(rows, ScheduledReport)
+
+
+def update_scheduled_report(report_id: str, **kwargs) -> bool:
+    if not kwargs:
+        return False
+    kwargs["updated_at"] = "datetime('now')"
+    sets = []
+    vals = []
+    for k, v in kwargs.items():
+        if v == "datetime('now')":
+            sets.append(f"{k} = datetime('now')")
+        else:
+            sets.append(f"{k} = ?")
+            if k == "recipient_emails" and isinstance(v, list):
+                vals.append(json.dumps(v))
+            elif isinstance(v, bool):
+                vals.append(1 if v else 0)
+            else:
+                vals.append(v if not isinstance(v, (dict, list)) else json.dumps(v))
+    vals.append(report_id)
+    sql = f"UPDATE scheduled_reports SET {', '.join(sets)} WHERE id = ?"
+    with get_db() as conn:
+        conn.execute(sql, tuple(vals))
+    return True
+
+
+def mark_scheduled_report_sent(report_id: str, next_run_at: str) -> bool:
+    with get_db() as conn:
+        conn.execute(
+            """UPDATE scheduled_reports
+               SET last_sent_at = datetime('now'),
+                   last_error = NULL,
+                   next_run_at = ?,
+                   updated_at = datetime('now')
+               WHERE id = ?""",
+            (next_run_at, report_id),
+        )
+    return True
+
+
+def mark_scheduled_report_failed(report_id: str, error_message: str) -> bool:
+    with get_db() as conn:
+        conn.execute(
+            """UPDATE scheduled_reports
+               SET last_error = ?, updated_at = datetime('now')
+               WHERE id = ?""",
+            (error_message[:500], report_id),
+        )
+    return True
+
+
+def delete_scheduled_report(report_id: str) -> bool:
+    with get_db() as conn:
+        conn.execute("DELETE FROM scheduled_reports WHERE id = ?", (report_id,))
     return True
 
 

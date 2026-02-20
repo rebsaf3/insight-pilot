@@ -6,6 +6,21 @@ from auth.session import require_permission, get_current_project_id
 from services import file_service, data_profiler, llm_service, code_executor, credit_service
 from db import queries
 
+_CHART_TYPE_OPTIONS = {
+    "auto": "Auto-select best fit",
+    "bar": "Bar",
+    "line": "Line",
+    "area": "Area",
+    "scatter": "Scatter",
+    "pie": "Pie",
+    "donut": "Donut",
+    "histogram": "Histogram",
+    "box": "Box",
+    "heatmap": "Heatmap",
+    "treemap": "Treemap",
+    "waterfall": "Waterfall",
+}
+
 
 def show():
     user, ws = require_permission("run_analysis")
@@ -204,6 +219,16 @@ def _step_describe(user, ws, selected_file):
         placeholder="Describe the chart, report, or dashboard you want...",
     )
 
+    selected_chart_type = st.selectbox(
+        "Preferred chart type",
+        list(_CHART_TYPE_OPTIONS.keys()),
+        format_func=lambda k: _CHART_TYPE_OPTIONS[k],
+        index=list(_CHART_TYPE_OPTIONS.keys()).index(st.session_state.get("wizard_chart_type", "auto"))
+        if st.session_state.get("wizard_chart_type", "auto") in _CHART_TYPE_OPTIONS
+        else 0,
+    )
+    st.session_state["wizard_chart_type"] = selected_chart_type
+
     # Save as template
     with st.expander("Save as Template", expanded=False):
         tmpl_name = st.text_input("Template name", key="save_tmpl_name")
@@ -241,6 +266,13 @@ def _step_describe(user, ws, selected_file):
 def _generate_chart(user, ws, selected_file, prompt, is_revision=False):
     """Generate a chart from the prompt."""
     project_instructions = st.session_state.get("project_instructions", "")
+    selected_chart_type = st.session_state.get("wizard_chart_type", "auto")
+    prompt_for_model = prompt
+    if selected_chart_type != "auto":
+        prompt_for_model = (
+            f"{prompt}\n\n"
+            f"Chart type requirement: Use a {selected_chart_type} chart unless the data makes it invalid."
+        )
 
     with st.spinner("Generating your report..."):
         try:
@@ -250,7 +282,7 @@ def _generate_chart(user, ws, selected_file, prompt, is_revision=False):
 
             # Call Claude
             result = llm_service.generate_chart_code(
-                user_prompt=prompt,
+                user_prompt=prompt_for_model,
                 data_profile=profile,
                 df=df,
                 project_instructions=project_instructions,
@@ -268,7 +300,7 @@ def _generate_chart(user, ws, selected_file, prompt, is_revision=False):
             while not exec_result["success"] and retries < 2:
                 retries += 1
                 refine_result = llm_service.refine_chart_code(
-                    original_prompt=prompt,
+                    original_prompt=prompt_for_model,
                     original_code=code,
                     error_message=exec_result["error"],
                     data_profile=profile,
@@ -307,6 +339,7 @@ def _generate_chart(user, ws, selected_file, prompt, is_revision=False):
                 st.session_state["wizard_figure_json"] = exec_result["figure"].to_json()
                 st.session_state["wizard_explanation"] = result.get("explanation", "")
                 st.session_state["wizard_prompt"] = prompt
+                st.session_state["wizard_chart_type"] = selected_chart_type
                 st.session_state["wizard_tokens_used"] = total_tokens
                 st.session_state["wizard_credit_cost"] = credit_cost
                 st.session_state["wizard_step"] = 2
@@ -434,6 +467,7 @@ def _step_save(user, ws, selected_file):
             dashboard_id=dashboard_id,
             file_id=selected_file.id,
             title=chart_title or "Untitled Chart",
+            chart_type=st.session_state.get("wizard_chart_type"),
             user_prompt=st.session_state.get("wizard_prompt", ""),
             generated_code=st.session_state.get("wizard_code", ""),
             created_by=user.id,
