@@ -19,7 +19,8 @@ def show():
         st.error("You don't have permission to manage API keys.")
         st.stop()
 
-    st.title("API Settings")
+    st.title("API Settings & Keys")
+    st.info("🔑 Manage your API keys, permissions, and view API documentation for integrating InsightPilot with other tools.")
 
     # Check if API add-on is active
     tier_config = TIERS.get(ws.tier, TIERS["free"])

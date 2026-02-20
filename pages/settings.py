@@ -14,6 +14,7 @@ from services.tfa_service import (
 def show():
     user = require_auth()
     st.title("Account Settings")
+    st.info("⚙️ Manage your profile, password, two-factor authentication, and notification preferences here.")
 
     tab_profile, tab_security, tab_tfa, tab_prefs, tab_team, tab_sessions = st.tabs(
         ["Profile", "Password", "Two-Factor Auth", "Preferences", "Team", "Sessions"]
@@ -22,6 +23,30 @@ def show():
     # ------------------------------------------------------------------ Profile
     with tab_profile:
         st.subheader("Profile Information")
+        # Avatar display and upload
+        st.markdown("#### Profile Picture")
+        avatar_url = user.avatar_url or "https://ui-avatars.com/api/?name=" + (user.display_name or user.email)
+        st.image(avatar_url, width=96, caption="Current Avatar")
+        with st.form("avatar_upload_form"):
+            uploaded_avatar = st.file_uploader("Upload new avatar", type=["png", "jpg", "jpeg", "gif"], accept_multiple_files=False)
+            avatar_submit = st.form_submit_button("Update Avatar", use_container_width=True)
+        if avatar_submit and uploaded_avatar:
+            from pathlib import Path
+            import uuid
+            ext = Path(uploaded_avatar.name).suffix.lower()
+            if ext not in [".png", ".jpg", ".jpeg", ".gif"]:
+                st.error("Unsupported file type.")
+            else:
+                avatar_dir = "storage/uploads/avatars"
+                Path(avatar_dir).mkdir(parents=True, exist_ok=True)
+                avatar_filename = f"{user.id}_{uuid.uuid4().hex}{ext}"
+                avatar_path = Path(avatar_dir) / avatar_filename
+                avatar_path.write_bytes(uploaded_avatar.read())
+                avatar_url = f"/{avatar_dir}/{avatar_filename}"
+                queries.update_user(user.id, avatar_url=avatar_url)
+                st.success("Avatar updated.")
+                st.rerun()
+
         with st.form("profile_form"):
             col_fn, col_ln = st.columns(2)
             first_name = col_fn.text_input(
@@ -190,14 +215,19 @@ def show():
                 st.code(c, language=None)
 
     # ------------------------------------------------------------------ Preferences
+    from components.theme import inject_custom_css
     with tab_prefs:
         st.subheader("Preferences")
 
         prefs = queries.get_user_preferences(user.id)
         current_theme = prefs.theme if prefs else "light"
         current_notif_email = prefs.notification_email if prefs else True
+        current_notif_in_app = getattr(prefs, "notification_in_app", True) if prefs else True
         current_notif_billing = prefs.notification_billing if prefs else True
         current_notif_product = prefs.notification_product if prefs else True
+
+        # Inject theme CSS
+        inject_custom_css(theme=current_theme)
 
         st.markdown("### Appearance")
         theme = st.selectbox(
@@ -208,11 +238,23 @@ def show():
             help="Changes the app color scheme. Reload may be required.",
         )
 
+        st.markdown("### Accessibility")
+        accessibility_options = st.multiselect(
+            "Accessibility options",
+            ["High contrast", "Large text", "Screen reader support"],
+            help="Choose accessibility features to improve usability."
+        )
+
         st.markdown("### Notifications")
         notif_email = st.toggle(
             "Email notifications",
             value=current_notif_email,
             help="Receive email notifications for important events",
+        )
+        notif_in_app = st.toggle(
+            "In-app notifications",
+            value=current_notif_in_app,
+            help="Show notifications in the app UI",
         )
         notif_billing = st.toggle(
             "Billing notifications",
@@ -230,8 +272,10 @@ def show():
                 user.id,
                 theme=theme,
                 notification_email=1 if notif_email else 0,
+                notification_in_app=1 if notif_in_app else 0,
                 notification_billing=1 if notif_billing else 0,
                 notification_product=1 if notif_product else 0,
+                accessibility_options=accessibility_options,
             )
             st.success("Preferences saved.")
             st.rerun()

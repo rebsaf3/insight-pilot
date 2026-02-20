@@ -28,6 +28,7 @@ def show():
         return
 
     st.title(dashboard.name)
+    st.info("📊 View and interact with your dashboards here. Dashboards display your charts and insights in a single place for easy sharing and review.")
     if dashboard.description:
         st.caption(dashboard.description)
 

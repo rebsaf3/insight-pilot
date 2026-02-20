@@ -10,7 +10,8 @@ from db import queries
 def show():
     user, ws = require_permission("upload_data")
 
-    st.title("Upload Data")
+    st.title("Upload Data File")
+    st.info("📤 Upload your CSV, Excel, or JSON files here. Uploaded files will be profiled and made available for analysis and dashboards.")
 
     # Project selection
     project_id = get_current_project_id()

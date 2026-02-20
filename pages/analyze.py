@@ -26,6 +26,7 @@ def show():
     user, ws = require_permission("run_analysis")
 
     st.title("Analyze Data")
+    st.info("🤖 Use this wizard to run AI-powered analyses on your uploaded data. Describe what you want to see, and InsightPilot will generate charts and insights.")
 
     project_id = get_current_project_id()
     if not project_id:

@@ -12,7 +12,8 @@ from config.settings import TIERS, AVAILABLE_FONTS, CHART_PALETTES
 def show():
     user, ws = require_permission("manage_branding")
 
-    st.title("Branding & Styling")
+    st.title("Branding & Style")
+    st.info("🎨 Customize your workspace branding, including logos, colors, and chart styles for a personalized experience.")
 
     # Tier check
     can_customize, level = branding_service.can_customize_branding(ws.tier)

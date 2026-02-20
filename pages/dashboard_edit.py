@@ -10,6 +10,7 @@ def show():
     user, ws = require_permission("create_edit_dashboards")
 
     st.title("Edit Dashboard")
+    st.info("✏️ Edit your dashboard layout, add or remove charts, and customize the appearance to fit your needs.")
 
     dashboard_id = st.session_state.get("view_dashboard_id")
     if not dashboard_id:

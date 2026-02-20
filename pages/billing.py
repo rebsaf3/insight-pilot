@@ -13,6 +13,7 @@ def show():
     user, ws = require_permission("manage_billing")
 
     st.title("Billing & Subscription")
+    st.info("💳 Manage your subscription, payment methods, and view billing history here.")
 
     # ----- Trial banner at top -----
     _show_trial_status(ws)

@@ -75,6 +75,10 @@ def show():
     st.title(f"Projects")
     st.caption(f"Workspace: {ws.name}")
 
+    # Onboarding tooltip for new users
+    if not projects:
+        st.info("👋 Welcome! Start by creating your first project. Projects help you organize your data, analyses, and dashboards. Use the form below to get started.")
+
     # Create new project
     with st.expander("Create New Project", icon=":material/add:"):
         with st.form("new_project"):
