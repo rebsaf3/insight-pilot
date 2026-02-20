@@ -1,6 +1,7 @@
 """Login and registration page."""
 
 import streamlit as st
+from textwrap import dedent
 
 from auth.authenticator import authenticate, register_user
 from auth.session import create_user_session, get_current_user
@@ -323,80 +324,85 @@ def show():
 
     with left:
         st.markdown(
-            f"""
-            <div class="auth-left-wrap">
-                <div class="auth-brand">
-                    <div class="logo-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                             xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 3V21H21" stroke="white" stroke-width="2"
-                                  stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M7 14L11 10L15 13L21 7" stroke="white" stroke-width="2"
-                                  stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div class="brand-name">NyLi Insights</div>
-                </div>
+            dedent("""
+<div class="auth-left-wrap">
+    <div class="auth-brand">
+        <div class="logo-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 3V21H21" stroke="white" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7 14L11 10L15 13L21 7" stroke="white" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div class="brand-name">NyLi Insights</div>
+    </div>
 
-                <div class="auth-hero">
-                    <h1>Deploy AI Insights<br/>That Drive Action</h1>
-                    <p>
-                        NyLi Insights gives your organization a secure analytics workspace
-                        with live dashboards, governed AI analysis, and publish-ready reporting.
-                    </p>
-                </div>
+    <div class="auth-hero">
+        <h1>Deploy AI Insights<br/>That Drive Action</h1>
+        <p>
+            NyLi Insights gives your organization a secure analytics workspace
+            with live dashboards, governed AI analysis, and publish-ready reporting.
+        </p>
+    </div>
 
-                <div class="auth-feature-list">
-                    <div class="auth-feature">
-                        <div class="check">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
-                                      stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="text"><b>Portfolio intelligence in one place</b> — unify market data, KPI trends, and analyst context across teams.</div>
-                    </div>
-                    <div class="auth-feature">
-                        <div class="check">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
-                                      stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="text"><b>Trusted AI analysis</b> — responses stay grounded in your approved datasets, reports, and prompts.</div>
-                    </div>
-                    <div class="auth-feature">
-                        <div class="check">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
-                                      stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="text"><b>Audit-ready workflows</b> — capture revisions, assumptions, and exports for compliance and review.</div>
-                    </div>
-                    <div class="auth-feature">
-                        <div class="check">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
-                                      stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="text"><b>Executive-ready delivery</b> — publish dashboards and insight briefs to stakeholders in minutes.</div>
-                    </div>
-                </div>
+    <div class="auth-feature-list">
+        <div class="auth-feature">
+            <div class="check">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
             </div>
-            """,
+            <div class="text"><b>Portfolio intelligence in one place</b> — unify market data, KPI trends, and analyst context across teams.</div>
+        </div>
+        <div class="auth-feature">
+            <div class="check">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="text"><b>Trusted AI analysis</b> — responses stay grounded in your approved datasets, reports, and prompts.</div>
+        </div>
+        <div class="auth-feature">
+            <div class="check">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="text"><b>Audit-ready workflows</b> — capture revisions, assumptions, and exports for compliance and review.</div>
+        </div>
+        <div class="auth-feature">
+            <div class="check">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="#0F766E" stroke-width="2.5"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="text"><b>Executive-ready delivery</b> — publish dashboards and insight briefs to stakeholders in minutes.</div>
+        </div>
+    </div>
+</div>
+            """),
             unsafe_allow_html=True,
         )
 
     with right:
+        right_subtitle = (
+            "Sign in to your NyLi Insights account"
+            if view != "register"
+            else "Create your NyLi Insights account"
+        )
         st.markdown(
-            f"""
-            <div class="auth-right-title">
-                <h2>{'Welcome Back' if view != 'register' else 'Create Account'}</h2>
-                <p>{'Sign in to your NyLi Insights account' if view != 'register' else 'Create your NyLi Insights account'}</p>
-            </div>
-            """,
+            dedent(f"""
+<div class="auth-right-title">
+    <h2>{'Welcome Back' if view != 'register' else 'Create Account'}</h2>
+    <p>{right_subtitle}</p>
+</div>
+            """),
             unsafe_allow_html=True,
         )
 
