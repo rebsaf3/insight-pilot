@@ -4,9 +4,37 @@ on:
     branches: [ main ]
   workflow_dispatch:
 jobs:
-  ci-gate:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: CI gate for Railway deploy
-        run: echo "CI passed. Railway can deploy this commit."
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Validate Railway secrets
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          test -n "$RAILWAY_TOKEN" || (echo "Missing secret: RAILWAY_TOKEN" && exit 1)
+          test -n "$RAILWAY_PROJECT_ID" || (echo "Missing secret: RAILWAY_PROJECT_ID" && exit 1)
+          test -n "$RAILWAY_SERVICE_ID" || (echo "Missing secret: RAILWAY_SERVICE_ID" && exit 1)
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          RAILWAY_ENVIRONMENT: ${{ secrets.RAILWAY_ENVIRONMENT }}
+        run: |
+          if [ -n "$RAILWAY_ENVIRONMENT" ]; then
+            railway up --ci --detach --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID" --environment "$RAILWAY_ENVIRONMENT"
+          else
+            railway up --ci --detach --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID"
+          fi
